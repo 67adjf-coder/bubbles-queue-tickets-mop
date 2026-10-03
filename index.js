@@ -493,7 +493,7 @@ async function handleTicketModals(interaction) {
             );
 
             await ticketChannel.send({
-                content: `<@&\({STAFF_ROLE_ID}>\){interaction.user}`,
+                content: `<@&${STAFF_ROLE_ID}> ${interaction.user}`,
                 embeds: [ticketEmbed],
                 components: [ticketButtons]
             });
