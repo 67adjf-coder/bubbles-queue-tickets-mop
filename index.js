@@ -151,11 +151,11 @@ function buildQueueEmbed(guildId, ticketChannelId, queueNum, buyerId, item, info
      𓂃 𓈒𓏸‪‪ 𓇼    [ **tid**__a__**l** **w**~~a~~***ves*** ](https://discord.com/channels/\({guildId}/\){ticketChannelId})   ＃ __ ${queueNum} __
 ~~                                                                                ~~
 <:blue:1554781672992407552>    <@${buyerId}>
-> \\  ${item}  <:hearty:1554781762813558804>\\ ${info}
-> \\  ${payment}  <:hearty:1554781762813558804>\\ ${price}
+>   ${item}   <:hearty:1554781762813558804>   ${info}
+>   ${payment}  <:hearty:1554781762813558804> ${price}
 _ _
 -# _ _        sea shore  ~~        ~~  <@${staffId}>
--# _ _        **\\  ${statusText}** \\ ${getGMT8Time()}
+-# _ _        **  ${statusText}**  ${getGMT8Time()}
 ~~                                                                                ~~
 _ _`;
 
@@ -453,7 +453,7 @@ async function handleTicketModals(interaction) {
             ];
         }
 
-        const channelName = `\({channelPrefix}-\){usernameSanitized}`;
+        const channelName = `\ ${channelPrefix}-${usernameSanitized}`;
 
         try {
             const parentCategory = interaction.guild.channels.cache.get(CATEGORY_ID);
