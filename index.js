@@ -17,7 +17,9 @@ const {
 } = require('discord.js');
 const express = require('express');
 const QRCode = require('qrcode');
-const axios = require('axios'); 
+const axios = require('axios');
+const Jimp = require('jimp');
+const Tesseract = require('tesseract.js');
 const discordTranscripts = require('discord-html-transcripts');
 require('dotenv').config();
 
@@ -140,10 +142,6 @@ client.on('interactionCreate', async (interaction) => {
         return handleMopModals(interaction);
     }
 });
-
-const axios = require('axios');
-const Jimp = require('jimp');
-const Tesseract = require('tesseract.js');
 
 // ==========================================
 // RECEIPT AUTO-READER (OCR) MODULE
