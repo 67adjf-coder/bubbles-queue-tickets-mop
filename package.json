@@ -1,0 +1,17 @@
+{
+  "name": "coastal-cart-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot with Queue List, Ticket Setup, and MOP Commands",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord-html-transcripts": "^3.2.0",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "qrcode": "^1.5.3",
+    "tesseract.js": "^5.0.5"
+  }
+}
