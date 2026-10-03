@@ -83,14 +83,14 @@ function isStaff(member, user) {
 function buildQueueEmbed(guildId, ticketChannelId, queueNum, buyerId, item, info, payment, price, staffId, statusText) {
     const description = 
 `_ _
-     𓂃 𓈒𓏸‪‪ 𓇼    [ **tid**__a__**l** **w**~~a~~***ves*** ](https://discord.com/channels/\({guildId}/\){ticketChannelId})  ＃ __ ${queueNum} __
+     𓂃 𓈒𓏸‪‪ 𓇼    [ **tid**__a__**l** **w**~~a~~***ves*** ](https://discord.com/channels/\({guildId}/\){ticketChannelId})   ＃ __ ${queueNum} __
 ~~                                                                                ~~
 <:blue:1554781672992407552>    <@${buyerId}>
-> \ ${item}  <:hearty:1554781762813558804>\ ${info}
-> \ ${payment}  <:hearty:1554781762813558804>\ ${price}
+> \\ \({item}  <:hearty:1554781762813558804>\\\){info}
+> \\ \({payment}  <:hearty:1554781762813558804>\\\){price}
 _ _
 -# _ _        sea shore  ~~        ~~  <@${staffId}>
--# _ _        **\ ${statusText}**\ ${getGMT8Time()}
+-# _ _        **\\ \({statusText}**\\\){getGMT8Time()}
 ~~                                                                                ~~
 _ _`;
 
@@ -230,7 +230,7 @@ _ _`
                 .setColor(PASTEL_BLUE)
                 .setDescription(
 `_ _
-# _ _      tick__kette__ b*oo*th <:butterfly:1554370425587245066>
+# _ _     tick__kette__ b*oo*th <:butterfly:1554370425587245066>
 _ _
     always  ask  in  <#1507214174084927501> 
     before ordering and opening a
@@ -286,7 +286,7 @@ _ _`
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId(`proceed_payment_${sessionId}`)
-                    .setEmoji('')
+                    .setLabel('Proceed to Payment')
                     .setStyle(ButtonStyle.Primary)
             );
 
@@ -595,7 +595,7 @@ _ _`
                 } catch (err) {
                     console.error('Failed to create ticket channel:', err);
                 }
-            }, 5000);
+            }, 1000);
             return;
         }
 
@@ -675,18 +675,18 @@ async function renderMopEmbed(interaction, mopType, sessionId, feeOrTip = 0) {
     let componentsRow = null;
 
     if (mopType === 'gcash') {
-        headerTitle = '                   𝓖ca**s**h   (  001  )   ';
+        headerTitle = '                    𝓖ca**s**h   (  001  )   ';
         accountNum = '0918  455  2148';
         qrPayload = `09184552148`;
     } else if (mopType === 'maya') {
-        headerTitle = '                   𝓜a**y**a   (  002  )   ';
+        headerTitle = '                    𝓜a**y**a   (  002  )   ';
         accountNum = '0918  455  2148';
         qrPayload = `09184552148`;
         componentsRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('copy_maya_num').setLabel('copy number').setStyle(ButtonStyle.Secondary)
         );
     } else if (mopType === 'gotyme') {
-        headerTitle = '                   𝓖oty**m**e   (  003  )   ';
+        headerTitle = '                    𝓖oty**m**e   (  003  )   ';
         accountNum = '0163 8115 1370';
         qrPayload = `016381151370`;
         componentsRow = new ActionRowBuilder().addComponents(
@@ -703,7 +703,7 @@ async function renderMopEmbed(interaction, mopType, sessionId, feeOrTip = 0) {
 `_ _
 # _ _     ${headerTitle}
 ~~                                                                        ~~
-          \`   ${accountNum}   \`
+          \`    ${accountNum}    \`
 ~~                                                                        ~~
 -# _ _                **𝓢can the qr code below!**
 _ _`
@@ -711,7 +711,7 @@ _ _`
         .setImage('attachment://qr_code.png');
 
     const replyOptions = {
-        content: `Payment details for **\({mopType.toUpperCase()}** (Total: **₱\){totalAmount}**):`,
+        content: `Payment details for **\ ${mopType.toUpperCase()}** (Total: **₱\)${totalAmount}**):`,
         embeds: [embed],
         files: [attachment]
     };
@@ -725,64 +725,6 @@ _ _`
     } else {
         await interaction.reply({ content: 'Payment details generated above!', ephemeral: true });
     }
-
-    startReceiptListener(interaction.channel, mopType, totalAmount);
-}
-
-function startReceiptListener(channel, mopType, expectedAmount) {
-    const filter = m => !m.author.bot && m.attachments.size > 0;
-    const collector = channel.createMessageCollector({ filter, time: 600000 });
-
-    collector.on('collect', async (message) => {
-        const attachment = message.attachments.first();
-        if (!attachment.contentType || !attachment.contentType.startsWith('image/')) return;
-
-        const processingMsg = await message.reply('🔍 *Reading screenshot receipt details...*');
-
-        try {
-            const worker = await createWorker('eng');
-            const ret = await worker.recognize(attachment.url);
-            await worker.terminate();
-
-            const text = ret.data.text;
-            let refNo = 'Unparsed';
-
-            const refMatch = text.match(/(?:ref|reference|no|txn)?[\s#:]*(\d{8,16})/i);
-            if (refMatch) refNo = refMatch[1];
-
-            const receiptEmbed = new EmbedBuilder()
-                .setColor(PASTEL_BLUE)
-                .setDescription(
-`_ _
-**price paid** : ₱${expectedAmount}
-**ref no.** : || ${refNo} ||
-**date and time** : \` ${getGMT8Timestamp()} \`
-_ _`
-                );
-
-            await processingMsg.delete().catch(() => {});
-            const verifyMsg = await channel.send({
-                content: `<@&${STAFF_ROLE_ID}> Please verify payment! Reply with **confirmed** to approve.`,
-                embeds: [receiptEmbed]
-            });
-
-            collector.stop();
-
-            const confirmFilter = m => isStaff(m.member, m.author) && m.content.toLowerCase().trim() === 'confirmed';
-            const confirmCollector = channel.createMessageCollector({ filter: confirmFilter, time: 600000 });
-
-            confirmCollector.on('collect', async () => {
-                const updatedEmbed = EmbedBuilder.from(receiptEmbed).setColor(PASTEL_GREEN);
-                await verifyMsg.edit({ embeds: [updatedEmbed] });
-                await channel.send('_ _\npayment received. thank you!\n_ _');
-                confirmCollector.stop();
-            });
-
-        } catch (err) {
-            console.error('OCR Error:', err);
-            await processingMsg.edit('⚠️ *Couldn\'t parse receipt automatically. Staff will verify manually.*');
-        }
-    });
 }
 
 client.login(process.env.DISCORD_TOKEN);
