@@ -140,6 +140,81 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
+// ==========================================
+// RECEIPT AUTO-READER (OCR) MODULE
+// ==========================================
+
+client.on('messageCreate', async (message) => {
+    // Ignore messages sent by bots
+    if (message.author.bot) return;
+
+    // Check if the bot is mentioned and if an image is attached
+    const isBotMentioned = message.mentions.has(client.user.id);
+    const attachment = message.attachments.first();
+
+    if (isBotMentioned && attachment && attachment.contentType?.startsWith('image/')) {
+        const loadingMsg = await message.reply('🔍 Scanning your receipt, please wait...');
+
+        try {
+            // Process image using Tesseract OCR
+            const { data: { text } } = await Tesseract.recognize(
+                attachment.url,
+                'eng'
+            );
+
+            // Regex patterns for PH E-Wallets / Banks
+            const refPatterns = [
+                /(?:Ref\.|Reference|Ref\s*No\.|Transaction\s*No\.|Txn\s*ID|Control\s*No\.)\s*[:#-]?\s*([A-Za-z0-9\s]{8,20})/i,
+                /\b\d{4}\s?\d{3}\s?\d{6}\b/,  // 13-digit GCash format
+                /\b\d{4}\s?\d{4}\s?\d{4}\b/   // 12-digit Maya format
+            ];
+
+            const amountPatterns = [
+                /(?:Amount|Total|Paid)\s*[:#-]?\s*(?:PHP|P|₱)?\s*([\d,]+\.\d{2})/i,
+                /(?:PHP|P|₱)\s*([\d,]+\.\d{2})/i
+            ];
+
+            // Extract Reference Number
+            let extractedRef = null;
+            for (const pattern of refPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    extractedRef = match[1] ? match[1].trim() : match[0].trim();
+                    break;
+                }
+            }
+
+            // Extract Amount Paid
+            let extractedAmount = null;
+            for (const pattern of amountPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    extractedAmount = match[1].trim();
+                    break;
+                }
+            }
+
+            // Build response embed
+            const receiptEmbed = new EmbedBuilder()
+                .setColor(PASTEL_BLUE)
+                .setTitle('🧾 Receipt Details Detected')
+                .addFields(
+                    { name: 'Reference Number', value: extractedRef ? `\`${extractedRef}\`` : '⚠️ *Not detected clearly*', inline: true },
+                    { name: 'Amount Paid', value: extractedAmount ? `₱${extractedAmount}` : '⚠️ *Not detected clearly*', inline: true },
+                    { name: 'Payer / Mentioned', value: `${message.author}`, inline: false }
+                )
+                .setFooter({ text: 'Please wait for staff to verify your payment.' })
+                .setTimestamp();
+
+            await loadingMsg.edit({ content: '✅ Receipt processed!', embeds: [receiptEmbed] });
+
+        } catch (error) {
+            console.error('OCR Processing Error:', error);
+            await loadingMsg.edit('❌ Failed to read the receipt image. Please verify manually.');
+        }
+    }
+});
+}
 
 // ==========================================
 // MODULE 1: QUEUE SYSTEM FUNCTIONS
