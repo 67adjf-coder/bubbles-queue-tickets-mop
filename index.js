@@ -155,7 +155,7 @@ function buildQueueEmbed(guildId, ticketChannelId, queueNum, buyerId, item, info
 > \\ \ ${payment}  <:hearty:1554781762813558804>\\\ ${price}
 _ _
 -# _ _        sea shore  ~~        ~~  <@${staffId}>
--# _ _        **\\ \ ${statusText}**\\\ ${getGMT8Time()}
+-# _ _        **\\ \ ${statusText}**\\\${getGMT8Time()}
 ~~                                                                                ~~
 _ _`;
 
@@ -344,9 +344,9 @@ _ _
         .setImage(BANNER_URL);
 
     const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('btn_order').setLabel('Order').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('btn_report').setLabel('Report').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('btn_others').setLabel('Others').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId('btn_order').setLabel('order').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('btn_report').setLabel('report').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('btn_others').setLabel('others').setStyle(ButtonStyle.Secondary)
     );
 
     await interaction.reply({ content: 'Ticket panel sent to channel!', ephemeral: true });
@@ -453,7 +453,7 @@ async function handleTicketModals(interaction) {
             ];
         }
 
-        const channelName = `\ ${channelPrefix}-\ ${usernameSanitized}`;
+        const channelName = `\({channelPrefix}-\){usernameSanitized}`;
 
         try {
             const parentCategory = interaction.guild.channels.cache.get(CATEGORY_ID);
@@ -479,8 +479,8 @@ async function handleTicketModals(interaction) {
                 .setImage(BANNER_URL);
 
             const ticketButtons = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('claim_ticket').setLabel('Claim').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('close_ticket').setLabel('Close').setStyle(ButtonStyle.Danger)
+                new ButtonBuilder().setCustomId('claim_ticket').setLabel('claim').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('close_ticket').setLabel('close').setStyle(ButtonStyle.Secondary)
             );
 
             await ticketChannel.send({
@@ -582,8 +582,8 @@ _ _`
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(`proceed_payment_${amount}`)
-            .setLabel('Proceed to Payment')
-            .setStyle(ButtonStyle.Primary)
+            .setLabel('proceed to payment')
+            .setStyle(ButtonStyle.Secondary)
     );
 
     await interaction.reply({ embeds: [mainEmbed], components: [row] });
@@ -596,9 +596,9 @@ async function handleMopButtons(interaction) {
         const amount = parseFloat(customId.replace('proceed_payment_', ''));
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`mop_select_gcash_${amount}`).setLabel('GCash').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId(`mop_select_maya_${amount}`).setLabel('Maya').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId(`mop_select_gotyme_${amount}`).setLabel('GoTyme').setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder().setCustomId(`mop_select_gcash_${amount}`).setLabel('gcash').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`mop_select_maya_${amount}`).setLabel('maya').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`mop_select_gotyme_${amount}`).setLabel('gotyme').setStyle(ButtonStyle.Secondary)
         );
 
         await interaction.reply({
@@ -646,32 +646,20 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
     const totalAmount = amount + feeOrTip;
     let headerTitle = '';
     let accountNum = '';
-    let qrPayload = '';
     let componentsRow = null;
 
     if (mopType === 'gcash') {
         headerTitle = '                    [ ꒰ gcash mode of payment ꒱ ]';
         accountNum = '09292850998';
-        qrPayload = `00020101021128520011ph.ppmi.qrph01110000000000002150000000009292850998520459995303608540\({totalAmount.toFixed(2).length.toString().padStart(2, '0')}\){totalAmount.toFixed(2)}5802PH5911Coastal Cart6008Manila6304`;
-    } else if (mopType === 'maya') {
-        headerTitle = '                    [ ꒰ maya mode of payment ꒱ ]';
-        accountNum = '09184552148';
-        qrPayload = `00020101021128520011ph.ppmi.qrph01110000000000002150000000009184552148520459995303608540\({totalAmount.toFixed(2).length.toString().padStart(2, '0')}\){totalAmount.toFixed(2)}5802PH5911Coastal Cart6008Manila6304`;
-        componentsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('copy_maya_num').setLabel('Copy Maya Account Number').setStyle(ButtonStyle.Secondary));
-    } else if (mopType === 'gotyme') {
-        headerTitle = '                   [ ꒰ gotyme mode of payment ꒱ ]';
-        accountNum = '016381151370';
-        qrPayload = `00020101021128520011ph.ppmi.qrph011100000000000021500000000016381151370520459995303608540\({totalAmount.toFixed(2).length.toString().padStart(2, '0')}\){totalAmount.toFixed(2)}5802PH5911Coastal Cart6008Manila6304`;
-        componentsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('copy_gotyme_num').setLabel('Copy GoTyme Account Number').setStyle(ButtonStyle.Secondary));
-    }
+        const qrPayload = `00020101021128520011ph.ppmi.qrph01110000000000002150000000009292850998520459995303608540\({totalAmount.toFixed(2).length.toString().padStart(2, '0')}\){totalAmount.toFixed(2)}5802PH5911Coastal Cart6008Manila6304`;
 
-    try {
-        const qrBuffer = await generateQRBuffer(qrPayload);
-        const attachment = new AttachmentBuilder(qrBuffer, { name: 'qr.png' });
+        try {
+            const qrBuffer = await generateQRBuffer(qrPayload);
+            const attachment = new AttachmentBuilder(qrBuffer, { name: 'qr.png' });
 
-        const embed = new EmbedBuilder()
-            .setColor(PASTEL_BLUE)
-            .setDescription(
+            const embed = new EmbedBuilder()
+                .setColor(PASTEL_BLUE)
+                .setDescription(
 `_ _
 ${headerTitle}
 ~~                                                                        ~~
@@ -683,30 +671,63 @@ ${headerTitle}
 -# _ _  a transaction history is required.
 ~~                                                                        ~~
 _ _`
-            )
-            .setImage('attachment://qr.png');
+                )
+                .setImage('attachment://qr.png');
 
-        const replyOptions = {
-            embeds: [embed],
-            files: [attachment]
-        };
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp({ embeds: [embed], files: [attachment] });
+            } else {
+                await interaction.reply({ embeds: [embed], files: [attachment] });
+            }
+        } catch (err) {
+            console.error('Error generating GCash QR Code:', err);
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp({ content: 'Failed to generate payment details.', ephemeral: true });
+            } else {
+                await interaction.reply({ content: 'Failed to generate payment details.', ephemeral: true });
+            }
+        }
+        return;
+    } 
 
-        if (componentsRow) {
-            replyOptions.components = [componentsRow];
-        }
+    if (mopType === 'maya') {
+        headerTitle = '                    [ ꒰ maya mode of payment ꒱ ]';
+        accountNum = '09184552148';
+        componentsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('copy_maya_num').setLabel('copy maya account number').setStyle(ButtonStyle.Secondary));
+    } else if (mopType === 'gotyme') {
+        headerTitle = '                   [ ꒰ gotyme mode of payment ꒱ ]';
+        accountNum = '016381151370';
+        componentsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('copy_gotyme_num').setLabel('copy gotyme account number').setStyle(ButtonStyle.Secondary));
+    }
 
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp(replyOptions);
-        } else {
-            await interaction.reply(replyOptions);
-        }
-    } catch (err) {
-        console.error('Error generating QR Code or MOP reply:', err);
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ content: 'Failed to generate payment details.', ephemeral: true });
-        } else {
-            await interaction.reply({ content: 'Failed to generate payment details.', ephemeral: true });
-        }
+    const embed = new EmbedBuilder()
+        .setColor(PASTEL_BLUE)
+        .setDescription(
+`_ _
+${headerTitle}
+~~                                                                        ~~
+> -# _ _  **amount to pay:** \` ₱${totalAmount.toFixed(2)} \`
+> -# _ _  **account number:** \` ${accountNum} \`
+~~                                                                        ~~
+-# _ _  send a clear screenshot of the receipt. 
+-# _ _  saved receipts will not be credited, and 
+-# _ _  a transaction history is required.
+~~                                                                        ~~
+_ _`
+        );
+
+    const replyOptions = {
+        embeds: [embed]
+    };
+
+    if (componentsRow) {
+        replyOptions.components = [componentsRow];
+    }
+
+    if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(replyOptions);
+    } else {
+        await interaction.reply(replyOptions);
     }
 }
 
