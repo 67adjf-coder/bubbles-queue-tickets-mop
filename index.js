@@ -463,7 +463,7 @@ async function handleTicketModals(interaction) {
             ];
         }
 
-        const channelName = `\({channelPrefix}-\){usernameSanitized}`;
+        const channelName = `\ ${channelPrefix}-${usernameSanitized}`;
 
         try {
             const ticketChannel = await interaction.guild.channels.create({
