@@ -740,20 +740,19 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
 `_ _
 # _ _     𝓖ca**s**h   (  001  )    
 ~~                                                                        ~~
-          \`   0918  455  2148   \`
+          \`    0918  455  2148   \`
 ~~                                                                        ~~
--# _ _                **𝓢can the qr code below!**`;
+-# _ _                **𝓢can the qr code below!**
 -# _ _                **𝓣ag bubbles when sending receipts!**`;
-
         imageUrl = GCASH_QR_URL;
     } else if (mopType === 'maya') {
         descriptionText = 
 `_ _
-# _ _     𝓜a**y**a   (  002  )    
+# _ _     𝓜a**y**a   (  002  )     
 ~~                                                                        ~~
           \`   0918  455  2148   \`
 ~~                                                                        ~~
--# _ _                **𝓒opy the number below!**`;
+-# _ _                **𝓒opy the number below!**
 -# _ _                **𝓣ag bubbles when sending receipts!**`;
 
         componentsRow = new ActionRowBuilder().addComponents(
@@ -762,11 +761,11 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
     } else if (mopType === 'gotyme') {
         descriptionText = 
 `_ _
-# _ _     𝓖oty**m**e   (  003  )    
+# _ _     𝓖oty**m**e   (  003  )     
 ~~                                                                        ~~
-          \`    0163 8115 1370   \`
+          \`   0163 8115 1370   \`
 ~~                                                                        ~~
--# _ _                **𝓒opy the number below!**`;
+-# _ _                **𝓒opy the number below!**
 -# _ _                **𝓣ag bubbles when sending receipts!**`;
 
         componentsRow = new ActionRowBuilder().addComponents(
