@@ -555,6 +555,9 @@ _ _`
 // ==========================================
 // MODULE 3: MODE OF PAYMENT (MOP) FUNCTIONS
 // ==========================================
+
+const GCASH_QR_URL = 'https://cdn.discordapp.com/attachments/1553697060056866906/1555828587649568838/Screenshot_2026-10-03_at_2.27.13_PM.png?backend=b2&ex=6ac1f1c9&is=6ac0a049&hm=2e41195db20ad2cd8d5649692ff1365f5b54e0ea6eb26e5f03d35dc4ba88aa6d';
+
 async function handleMopCommand(interaction) {
     if (!isStaff(interaction.member, interaction.user)) {
         return interaction.reply({ content: 'Only staff can use this command.', ephemeral: true });
@@ -643,82 +646,54 @@ async function handleMopModals(interaction) {
 }
 
 async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
-    const totalAmount = amount + feeOrTip;
-    let headerTitle = '';
-    let accountNum = '';
+    let descriptionText = '';
     let componentsRow = null;
+    let imageUrl = null;
 
     if (mopType === 'gcash') {
-        headerTitle = '                    [ ꒰ gcash mode of payment ꒱ ]';
-        accountNum = '09292850998';
-        const qrPayload = `00020101021128520011ph.ppmi.qrph01110000000000002150000000009292850998520459995303608540\({totalAmount.toFixed(2).length.toString().padStart(2, '0')}\){totalAmount.toFixed(2)}5802PH5911Coastal Cart6008Manila6304`;
-
-        try {
-            const qrBuffer = await generateQRBuffer(qrPayload);
-            const attachment = new AttachmentBuilder(qrBuffer, { name: 'qr.png' });
-
-            const embed = new EmbedBuilder()
-                .setColor(PASTEL_BLUE)
-                .setDescription(
+        descriptionText = 
 `_ _
-${headerTitle}
+# _ _     𝓖ca**s**h   (  001  )    
 ~~                                                                        ~~
-> -# _ _  **amount to pay:** \` ₱${totalAmount.toFixed(2)} \`
-> -# _ _  **account number:** \` ${accountNum} \`
+          \`   0918  455  2148   \`
 ~~                                                                        ~~
--# _ _  send a clear screenshot of the receipt. 
--# _ _  saved receipts will not be credited, and 
--# _ _  a transaction history is required.
+-# _ _                **𝓢can the qr code below!**`;
+        imageUrl = GCASH_QR_URL;
+    } else if (mopType === 'maya') {
+        descriptionText = 
+`_ _
+# _ _     𝓜a**y**a   (  002  )    
 ~~                                                                        ~~
-_ _`
-                )
-                .setImage('attachment://qr.png');
+          \`   0918  455  2148   \`
+~~                                                                        ~~
+-# _ _                **𝓒opy the number below!**`;
 
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({ embeds: [embed], files: [attachment] });
-            } else {
-                await interaction.reply({ embeds: [embed], files: [attachment] });
-            }
-        } catch (err) {
-            console.error('Error generating GCash QR Code:', err);
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({ content: 'Failed to generate payment details.', ephemeral: true });
-            } else {
-                await interaction.reply({ content: 'Failed to generate payment details.', ephemeral: true });
-            }
-        }
-        return;
-    } 
-
-    if (mopType === 'maya') {
-        headerTitle = '                    [ ꒰ maya mode of payment ꒱ ]';
-        accountNum = '09184552148';
-        componentsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('copy_maya_num').setLabel('copy maya account number').setStyle(ButtonStyle.Secondary));
+        componentsRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('copy_maya_num').setLabel('copy maya account number').setStyle(ButtonStyle.Secondary)
+        );
     } else if (mopType === 'gotyme') {
-        headerTitle = '                   [ ꒰ gotyme mode of payment ꒱ ]';
-        accountNum = '016381151370';
-        componentsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('copy_gotyme_num').setLabel('copy gotyme account number').setStyle(ButtonStyle.Secondary));
+        descriptionText = 
+`_ _
+# _ _     𝓖oty**m**e   (  003  )    
+~~                                                                        ~~
+          \`    0163 8115 1370   \`
+~~                                                                        ~~
+-# _ _                **𝓒opy the number below!**`;
+
+        componentsRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('copy_gotyme_num').setLabel('copy gotyme account number').setStyle(ButtonStyle.Secondary)
+        );
     }
 
     const embed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
-        .setDescription(
-`_ _
-${headerTitle}
-~~                                                                        ~~
-> -# _ _  **amount to pay:** \` ₱${totalAmount.toFixed(2)} \`
-> -# _ _  **account number:** \` ${accountNum} \`
-~~                                                                        ~~
--# _ _  send a clear screenshot of the receipt. 
--# _ _  saved receipts will not be credited, and 
--# _ _  a transaction history is required.
-~~                                                                        ~~
-_ _`
-        );
+        .setDescription(descriptionText);
 
-    const replyOptions = {
-        embeds: [embed]
-    };
+    if (imageUrl) {
+        embed.setImage(imageUrl);
+    }
+
+    const replyOptions = { embeds: [embed] };
 
     if (componentsRow) {
         replyOptions.components = [componentsRow];
