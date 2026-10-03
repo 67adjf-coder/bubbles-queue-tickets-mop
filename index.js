@@ -21,7 +21,7 @@ const { createWorker } = require('tesseract.js');
 const discordTranscripts = require('discord-html-transcripts');
 require('dotenv').config();
 
-// --- HTTP SERVER FOR RENDER HEALTH CHECK ---
+// --- HTTP SERVER FOR HOSTING HEALTH CHECKS ---
 const app = express();
 const PORT = process.env.PORT || 10000;
 app.get('/', (req, res) => res.send('Combined Coastal Cart Bot is online.'));
@@ -42,6 +42,7 @@ const PASTEL_GREEN = 0x77DD77;
 let queueCounter = 1;
 const queueStore = new Map();
 const activeMopSessions = new Map();
+const ticketStore = new Map(); // Stores { buyerId, claimedByStaffId }
 
 // --- HELPER FUNCTIONS ---
 function getGMT8Time() {
@@ -427,6 +428,11 @@ _ _`
                 return interaction.reply({ content: 'Only staff can claim tickets.', ephemeral: true });
             }
 
+            // Save claiming staff ID
+            const ticketData = ticketStore.get(interaction.channelId) || {};
+            ticketData.claimedByStaffId = interaction.user.id;
+            ticketStore.set(interaction.channelId, ticketData);
+
             const existingRow = interaction.message.components[0];
             const disabledRow = new ActionRowBuilder().addComponents(
                 ButtonBuilder.from(existingRow.components[0]).setDisabled(true),
@@ -443,44 +449,19 @@ _ _`
                 return interaction.reply({ content: 'Only staff can close tickets.', ephemeral: true });
             }
 
-            await interaction.reply('ticket will be closed in 10 mins, generating transcript!');
+            const modal = new ModalBuilder()
+                .setCustomId('modal_close_reason')
+                .setTitle('Close Ticket');
 
-            setTimeout(async () => {
-                try {
-                    const channel = interaction.channel;
-                    const transcriptFile = await discordTranscripts.createTranscript(channel, {
-                        limit: -1,
-                        fileName: `transcript-${channel.name}.html`,
-                        poweredBy: false
-                    });
+            const reasonInput = new TextInputBuilder()
+                .setCustomId('close_reason')
+                .setLabel('Reason for closing ticket:')
+                .setPlaceholder('Enter the reason for closing this ticket...')
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true);
 
-                    const transcriptEmbed = new EmbedBuilder()
-                        .setColor(PASTEL_BLUE)
-                        .setTitle(`Ticket Transcript — #${channel.name}`)
-                        .setDescription(`Saved log for channel \`${channel.name}\`. Download and double-click the attached \`.html\` file to view the complete formatted chat in your web browser.`)
-                        .setImage(BANNER_URL);
-
-                    const transcriptChannel = interaction.guild.channels.cache.get(TRANSCRIPT_CHANNEL_ID);
-                    if (transcriptChannel) {
-                        await transcriptChannel.send({ embeds: [transcriptEmbed], files: [transcriptFile] });
-                    }
-
-                    const openerOverwrites = channel.permissionOverwrites.cache.find(
-                        p => p.type === 1 && p.id !== client.user.id && p.id !== interaction.guild.id
-                    );
-                    if (openerOverwrites) {
-                        const ticketOpener = await interaction.guild.members.fetch(openerOverwrites.id).catch(() => null);
-                        if (ticketOpener) {
-                            await ticketOpener.send({ embeds: [transcriptEmbed], files: [transcriptFile] }).catch(() => {});
-                        }
-                    }
-
-                    await channel.delete();
-                } catch (err) {
-                    console.error('Error during channel closure:', err);
-                }
-            }, 600000);
-            return;
+            modal.addComponents(new ActionRowBuilder().addComponents(reasonInput));
+            return await interaction.showModal(modal);
         }
 
         // --- MOP BUTTONS ---
@@ -590,6 +571,9 @@ _ _`
                         ]
                     });
 
+                    // Store buyer ID mapped to ticket channel ID
+                    ticketStore.set(ticketChannel.id, { buyerId: interaction.user.id, claimedByStaffId: null });
+
                     await interaction.editReply({ content: `Your ticket has been created: <#${ticketChannel.id}>` });
 
                     const ticketEmbed = new EmbedBuilder()
@@ -614,6 +598,68 @@ _ _`
             }, 5000);
             return;
         }
+
+        // --- SUBMIT TICKET CLOSE REASON MODAL ---
+        if (interaction.customId === 'modal_close_reason') {
+            const closeReason = interaction.fields.getTextInputValue('close_reason');
+            const channel = interaction.channel;
+            const closedByStaffId = interaction.user.id;
+
+            const ticketData = ticketStore.get(channel.id) || {};
+            const buyerId = ticketData.buyerId || 'Unknown Buyer';
+            const claimedByStaffId = ticketData.claimedByStaffId ? `<@${ticketData.claimedByStaffId}>` : 'None';
+
+            await interaction.reply('ticket will be closed in 10 mins, generating transcript!');
+
+            setTimeout(async () => {
+                try {
+                    // Generate transcript
+                    const transcriptFile = await discordTranscripts.createTranscript(channel, {
+                        limit: -1,
+                        fileName: `transcript-${channel.name}.html`,
+                        poweredBy: false
+                    });
+
+                    // Custom Pastel Blue Layout Embed
+                    const transcriptEmbed = new EmbedBuilder()
+                        .setColor(PASTEL_BLUE)
+                        .setDescription(
+`_ _
+> catered by : ${claimedByStaffId}
+> closed by : <@${closedByStaffId}>
+_ _
+> buyer : <@${buyerId}>
+> reason: ${closeReason}
+_ _`
+                        )
+                        .setImage(BANNER_URL);
+
+                    // Send to Transcript Channel
+                    const transcriptChannel = interaction.guild.channels.cache.get(TRANSCRIPT_CHANNEL_ID);
+                    if (transcriptChannel) {
+                        await transcriptChannel.send({ embeds: [transcriptEmbed], files: [transcriptFile] });
+                    }
+
+                    // Send to Buyer DMs
+                    try {
+                        const buyerUser = await client.users.fetch(buyerId).catch(() => null);
+                        if (buyerUser) {
+                            await buyerUser.send({ embeds: [transcriptEmbed], files: [transcriptFile] });
+                        }
+                    } catch (dmErr) {
+                        console.error('Could not send DM to buyer:', dmErr);
+                    }
+
+                    // Cleanup store and delete channel
+                    ticketStore.delete(channel.id);
+                    await channel.delete();
+
+                } catch (err) {
+                    console.error('Error during ticket closure and transcript generation:', err);
+                }
+            }, 600000); // 10 minute delay
+            return;
+        }
     }
 });
 
@@ -629,18 +675,18 @@ async function renderMopEmbed(interaction, mopType, sessionId, feeOrTip = 0) {
     let componentsRow = null;
 
     if (mopType === 'gcash') {
-        headerTitle = '𝓖ca**s**h   (  001  )   ';
+        headerTitle = '                   𝓖ca**s**h   (  001  )   ';
         accountNum = '0918  455  2148';
         qrPayload = `09184552148`;
     } else if (mopType === 'maya') {
-        headerTitle = '𝓜a**y**a   (  002  )   ';
+        headerTitle = '                   𝓜a**y**a   (  002  )   ';
         accountNum = '0918  455  2148';
         qrPayload = `09184552148`;
         componentsRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('copy_maya_num').setLabel('copy number').setStyle(ButtonStyle.Secondary)
         );
     } else if (mopType === 'gotyme') {
-        headerTitle = '𝓖oty**m**e   (  003  )   ';
+        headerTitle = '                   𝓖oty**m**e   (  003  )   ';
         accountNum = '0163 8115 1370';
         qrPayload = `016381151370`;
         componentsRow = new ActionRowBuilder().addComponents(
