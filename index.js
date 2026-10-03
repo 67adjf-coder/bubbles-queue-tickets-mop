@@ -30,7 +30,6 @@ app.listen(PORT, '0.0.0.0', () => console.log(`Web server listening on port ${PO
 
 const STAFF_ROLE_ID = '1533372358755221566';
 const QUEUE_CHANNEL_ID = '1539239066049060974';
-const CATEGORY_ID = '1539233770035617904';
 const TRANSCRIPT_CHANNEL_ID = '1507278726998524046';
 const VOUCH_URL = 'https://discord.com/channels/1507214174084927498/1507271897962778706';
 const BANNER_URL = 'https://cdn.discordapp.com/attachments/1553697060056866906/1554405328462938162/Coral_Reef_Sea_GIF_-_Coral_Reef_Sea_Ocean_-_Discover__Share_GIFs.gif?ex=6abf6745&is=6abe15c5&hm=7248fb3fe9a07a4857b393db5d6a767808fb7d12d910cd4e1bcd95281abb5a18';
@@ -321,6 +320,13 @@ _ _`
 
 
 // ==========================================
+// CONFIGURATION (Category IDs)
+// ==========================================
+const ORDER_CATEGORY_ID = '1537390467921215498';
+const REPORT_CATEGORY_ID = '1537434112951062598';
+const OTHERS_CATEGORY_ID = '1555853722788302848';
+
+// ==========================================
 // MODULE 2: TICKET SYSTEM FUNCTIONS
 // ==========================================
 async function handleTicketSetupCommand(interaction) {
@@ -429,10 +435,12 @@ async function handleTicketModals(interaction) {
 
         const usernameSanitized = interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, '');
         let channelPrefix = '';
+        let targetCategoryId = '';
         let formFields = [];
 
         if (interaction.customId === 'modal_order') {
             channelPrefix = 'order';
+            targetCategoryId = ORDER_CATEGORY_ID;
             formFields = [
                 { name: 'Product Name', value: interaction.fields.getTextInputValue('product_name') },
                 { name: 'Quantity', value: interaction.fields.getTextInputValue('quantity') },
@@ -440,6 +448,7 @@ async function handleTicketModals(interaction) {
             ];
         } else if (interaction.customId === 'modal_report') {
             channelPrefix = 'report';
+            targetCategoryId = REPORT_CATEGORY_ID;
             formFields = [
                 { name: 'Product Name', value: interaction.fields.getTextInputValue('product_name') },
                 { name: 'Months Purchased', value: interaction.fields.getTextInputValue('months_purchased') },
@@ -448,19 +457,19 @@ async function handleTicketModals(interaction) {
             ];
         } else if (interaction.customId === 'modal_others') {
             channelPrefix = 'others';
+            targetCategoryId = OTHERS_CATEGORY_ID;
             formFields = [
                 { name: 'Reason for opening a ticket', value: interaction.fields.getTextInputValue('reason') }
             ];
         }
 
-        const channelName = `\ ${channelPrefix}-${usernameSanitized}`;
+        const channelName = `\({channelPrefix}-\){usernameSanitized}`;
 
         try {
-            const parentCategory = interaction.guild.channels.cache.get(CATEGORY_ID);
             const ticketChannel = await interaction.guild.channels.create({
                 name: channelName,
                 type: ChannelType.GuildText,
-                parent: parentCategory ? parentCategory.id : null,
+                parent: targetCategoryId,
                 permissionOverwrites: [
                     { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
                     { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
@@ -504,8 +513,9 @@ async function handleTicketModals(interaction) {
         const buyerId = ticketData.buyerId || 'Unknown Buyer';
         const claimedByStaffId = ticketData.claimedByStaffId ? `<@${ticketData.claimedByStaffId}>` : 'None';
 
-        await interaction.reply('ticket will be closed in 10 mins, generating transcript!');
+        await interaction.reply('Ticket will be closed in 10 seconds, generating transcript!');
 
+        // 10000ms = 10 seconds
         setTimeout(async () => {
             try {
                 const transcriptFile = await discordTranscripts.createTranscript(channel, {
@@ -547,10 +557,9 @@ _ _`
             } catch (err) {
                 console.error('Error during ticket closure and transcript generation:', err);
             }
-        }, 600000);
+        }, 10000); 
     }
 }
-
 
 // ==========================================
 // MODULE 3: MODE OF PAYMENT (MOP) FUNCTIONS
