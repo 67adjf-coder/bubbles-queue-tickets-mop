@@ -141,6 +141,10 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
+const axios = require('axios');
+const Jimp = require('jimp');
+const Tesseract = require('tesseract.js');
+
 // ==========================================
 // RECEIPT AUTO-READER (OCR) MODULE
 // ==========================================
@@ -154,27 +158,34 @@ client.on('messageCreate', async (message) => {
         const loadingMsg = await message.reply('🔍 Scanning your receipt, please wait...');
 
         try {
-            // Fetch image buffer directly to prevent URL loading/CORS/SSL fails
+            // 1. Download image buffer via Axios
             const response = await axios.get(attachment.url, { responseType: 'arraybuffer' });
-            const imageBuffer = Buffer.from(response.data);
+            const inputBuffer = Buffer.from(response.data);
 
-            const { data: { text } } = await Tesseract.recognize(
-                imageBuffer,
-                'eng'
-            );
+            // 2. Pre-process image with Jimp (Grayscale + Contrast + Resize) for optimal OCR reading
+            const image = await Jimp.read(inputBuffer);
+            image.greyscale().contrast(0.2).resize(1000, Jimp.AUTO);
+            const processedBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
 
-            // Refined Regex for GCash, Maya, and Bank Receipts
+            // 3. Run Tesseract OCR
+            const { data: { text } } = await Tesseract.recognize(processedBuffer, 'eng');
+            console.log('--- OCR RAW TEXT ---');
+            console.log(text);
+            console.log('--------------------');
+
+            // 4. Regex Patterns for GCash, Maya, GoTyme
             const refPatterns = [
-                /(?:Ref\s*No\.|Reference\s*No\.|Ref\.|Transaction\s*No\.|Txn\s*ID|Control\s*No\.)\s*[:#-]?\s*([0-9\s]{10,20})/i,
-                /\b\d{13}\b/,                               // Standard 13-digit GCash Ref
-                /\b\d{4}\s?\d{3}\s?\d{6}\b/,               // Spaced GCash Ref
-                /\b\d{4}\s?\d{4}\s?\d{4}\b/                // Maya 12-digit Ref
+                /(?:Ref\s*No\.|Reference\s*No\.|Ref\.|Transaction\s*No\.|Txn\s*ID|Control\s*No\.)\s*[:#-]?\s*([0-9\s]{9,20})/i,
+                /\b00\d{10,12}\b/,                           // GCash standard ref starting with 00
+                /\b\d{13}\b/,                                 // Standard 13-digit GCash Ref
+                /\b\d{4}\s?\d{3}\s?\d{6}\b/,                 // Spaced GCash Ref
+                /\b\d{4}\s?\d{4}\s?\d{4}\b/                  // Maya/GoTyme 12-digit Ref
             ];
 
             const amountPatterns = [
                 /(?:Total\s*Amount\s*Sent|Amount|Total|Paid)\s*[:#-]?\s*(?:PHP|P|₱)?\s*([\d,]+\.\d{2})/i,
                 /(?:PHP|P|₱)\s*([\d,]+\.\d{2})/i,
-                /\b([\d,]+\.\d{2})\b/                      // Standalone decimal amount
+                /\b([\d,]+\.\d{2})\b/                        // Standalone amount like 224.00
             ];
 
             // Extract Reference Number
@@ -211,7 +222,7 @@ client.on('messageCreate', async (message) => {
             await loadingMsg.edit({ content: '✅ Receipt processed!', embeds: [receiptEmbed] });
 
         } catch (error) {
-            console.error('OCR Processing Error:', error);
+            console.error('OCR Processing Error details:', error);
             await loadingMsg.edit('❌ Failed to read the receipt image. Please verify manually.');
         }
     }
