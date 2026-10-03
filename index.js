@@ -214,7 +214,6 @@ client.on('messageCreate', async (message) => {
         }
     }
 });
-}
 
 // ==========================================
 // MODULE 1: QUEUE SYSTEM FUNCTIONS
