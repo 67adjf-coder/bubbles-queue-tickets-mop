@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: coastal-cart-bot
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: PORT
+        value: 10000
