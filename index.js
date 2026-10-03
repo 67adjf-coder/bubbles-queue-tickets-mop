@@ -17,6 +17,7 @@ const {
 } = require('discord.js');
 const express = require('express');
 const QRCode = require('qrcode');
+const axios = require('axios'); 
 const discordTranscripts = require('discord-html-transcripts');
 require('dotenv').config();
 
@@ -143,12 +144,9 @@ client.on('interactionCreate', async (interaction) => {
 // ==========================================
 // RECEIPT AUTO-READER (OCR) MODULE
 // ==========================================
-
 client.on('messageCreate', async (message) => {
-    // Ignore messages sent by bots
     if (message.author.bot) return;
 
-    // Check if the bot is mentioned and if an image is attached
     const isBotMentioned = message.mentions.has(client.user.id);
     const attachment = message.attachments.first();
 
@@ -156,22 +154,27 @@ client.on('messageCreate', async (message) => {
         const loadingMsg = await message.reply('🔍 Scanning your receipt, please wait...');
 
         try {
-            // Process image using Tesseract OCR
+            // Fetch image buffer directly to prevent URL loading/CORS/SSL fails
+            const response = await axios.get(attachment.url, { responseType: 'arraybuffer' });
+            const imageBuffer = Buffer.from(response.data);
+
             const { data: { text } } = await Tesseract.recognize(
-                attachment.url,
+                imageBuffer,
                 'eng'
             );
 
-            // Regex patterns for PH E-Wallets / Banks
+            // Refined Regex for GCash, Maya, and Bank Receipts
             const refPatterns = [
-                /(?:Ref\.|Reference|Ref\s*No\.|Transaction\s*No\.|Txn\s*ID|Control\s*No\.)\s*[:#-]?\s*([A-Za-z0-9\s]{8,20})/i,
-                /\b\d{4}\s?\d{3}\s?\d{6}\b/,  // 13-digit GCash format
-                /\b\d{4}\s?\d{4}\s?\d{4}\b/   // 12-digit Maya format
+                /(?:Ref\s*No\.|Reference\s*No\.|Ref\.|Transaction\s*No\.|Txn\s*ID|Control\s*No\.)\s*[:#-]?\s*([0-9\s]{10,20})/i,
+                /\b\d{13}\b/,                               // Standard 13-digit GCash Ref
+                /\b\d{4}\s?\d{3}\s?\d{6}\b/,               // Spaced GCash Ref
+                /\b\d{4}\s?\d{4}\s?\d{4}\b/                // Maya 12-digit Ref
             ];
 
             const amountPatterns = [
-                /(?:Amount|Total|Paid)\s*[:#-]?\s*(?:PHP|P|₱)?\s*([\d,]+\.\d{2})/i,
-                /(?:PHP|P|₱)\s*([\d,]+\.\d{2})/i
+                /(?:Total\s*Amount\s*Sent|Amount|Total|Paid)\s*[:#-]?\s*(?:PHP|P|₱)?\s*([\d,]+\.\d{2})/i,
+                /(?:PHP|P|₱)\s*([\d,]+\.\d{2})/i,
+                /\b([\d,]+\.\d{2})\b/                      // Standalone decimal amount
             ];
 
             // Extract Reference Number
@@ -179,22 +182,21 @@ client.on('messageCreate', async (message) => {
             for (const pattern of refPatterns) {
                 const match = text.match(pattern);
                 if (match) {
-                    extractedRef = match[1] ? match[1].trim() : match[0].trim();
+                    extractedRef = (match[1] || match[0]).replace(/\s+/g, '').trim();
                     break;
                 }
             }
 
-            // Extract Amount Paid
+            // Extract Amount
             let extractedAmount = null;
             for (const pattern of amountPatterns) {
                 const match = text.match(pattern);
                 if (match) {
-                    extractedAmount = match[1].trim();
+                    extractedAmount = (match[1] || match[0]).trim();
                     break;
                 }
             }
 
-            // Build response embed
             const receiptEmbed = new EmbedBuilder()
                 .setColor(PASTEL_BLUE)
                 .setTitle('🧾 Receipt Details Detected')
