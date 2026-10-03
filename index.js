@@ -741,6 +741,8 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
           \`   0918  455  2148   \`
 ~~                                                                        ~~
 -# _ _                **𝓢can the qr code below!**`;
+-# _ _                **𝓣ag bubbles when sending receipts!**`;
+
         imageUrl = GCASH_QR_URL;
     } else if (mopType === 'maya') {
         descriptionText = 
@@ -750,6 +752,7 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
           \`   0918  455  2148   \`
 ~~                                                                        ~~
 -# _ _                **𝓒opy the number below!**`;
+-# _ _                **𝓣ag bubbles when sending receipts!**`;
 
         componentsRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('copy_maya_num').setLabel('copy maya account number').setStyle(ButtonStyle.Secondary)
@@ -762,6 +765,7 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
           \`    0163 8115 1370   \`
 ~~                                                                        ~~
 -# _ _                **𝓒opy the number below!**`;
+-# _ _                **𝓣ag bubbles when sending receipts!**`;
 
         componentsRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('copy_gotyme_num').setLabel('copy gotyme account number').setStyle(ButtonStyle.Secondary)
