@@ -32,6 +32,7 @@ app.get('/', (req, res) => res.send('Combined Coastal Cart Bot is online.'));
 app.listen(PORT, '0.0.0.0', () => console.log(`Web server listening on port ${PORT}`));
 
 const STAFF_ROLE_ID = '1533372358755221566';
+const RESTRICTED_TICKET_ROLE_ID = '1557329338943283240';
 const QUEUE_CHANNEL_ID = '1539239066049060974';
 const TRANSCRIPT_CHANNEL_ID = '1507278726998524046';
 const VOUCH_URL = 'https://discord.com/channels/1507214174084927498/1507271897962778706';
@@ -235,6 +236,14 @@ async function handleTicketSetupCommand(interaction) {
 }
 
 async function handleCreateTicketButton(interaction) {
+    // Check if member has restricted role
+    if (interaction.member.roles.cache.has(RESTRICTED_TICKET_ROLE_ID)) {
+        return await interaction.reply({
+            content: `You cannot open a ticket right now. You must vouch your previous item(s) in [vouch-items](${VOUCH_URL}) to regain access to create a ticket!`,
+            ephemeral: true
+        });
+    }
+
     const channelName = `ticket-${interaction.user.username}`.toLowerCase();
     
     const ticketChannel = await interaction.guild.channels.create({
@@ -405,7 +414,7 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
     } else if (mopType === 'gotyme') {
         descriptionText = 
 `_ _
-# _ _     𝓖oty**m**e   (  003  )    
+# _ _     英oty**m**e   (  003  )    
 ~~                                                                        ~~
           \`    0163 8115 1370   \`
 ~~                                                                        ~~
