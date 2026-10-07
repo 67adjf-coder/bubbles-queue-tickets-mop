@@ -214,8 +214,11 @@ async function handleQueueCompleteButton(interaction) {
 // COMMAND HANDLER 2: /ticket-setup
 // ==========================================
 async function handleTicketSetupCommand(interaction) {
+    // Defer reply immediately to prevent "Application did not respond"
+    await interaction.deferReply({ ephemeral: true });
+
     if (!isStaff(interaction.member)) {
-        return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+        return interaction.editReply({ content: 'You do not have permission to use this command.' });
     }
 
     const embed = new EmbedBuilder()
@@ -231,8 +234,11 @@ async function handleTicketSetupCommand(interaction) {
             .setStyle(ButtonStyle.Primary)
     );
 
+    // Send the panel directly into the channel
     await interaction.channel.send({ embeds: [embed], components: [row] });
-    await interaction.reply({ content: 'Ticket setup panel deployed!', ephemeral: true });
+
+    // Confirm deployment
+    await interaction.editReply({ content: 'Ticket setup panel deployed!' });
 }
 
 async function handleCreateTicketButton(interaction) {
@@ -414,7 +420,7 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
     } else if (mopType === 'gotyme') {
         descriptionText = 
 `_ _
-# _ _     英oty**m**e   (  003  )    
+# _ _     𝓖oty**m**e   (  003  )    
 ~~                                                                        ~~
           \`    0163 8115 1370   \`
 ~~                                                                        ~~
