@@ -521,7 +521,7 @@ _ _`
         );
 
         await interaction.update({ components: [disabledRow] });
-        await interaction.channel.send(`tickette will be cαtered by: ${interaction.user}`);
+        await interaction.channel.send(`ticket claimed by : ${interaction.user}`);
         return;
     }
 
@@ -763,7 +763,6 @@ async function handleTicketModals(interaction) {
         const channelName = `${channelPrefix}-${usernameSanitized}`;
 
         try {
-            // Give the bot explicit permissions to view and send messages in the channel it creates
             const permissionOverwrites = [
                 { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
                 { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
@@ -783,12 +782,19 @@ async function handleTicketModals(interaction) {
 
             ticketStore.set(ticketChannel.id, { buyerId: interaction.user.id, claimedByStaffId: null });
 
-            await interaction.editReply({ content: `Your ticket has been created: <#${ticketChannel.id}>` });
+            // Redirect user directly to their newly created ticket channel via clickable channel mention
+            await interaction.editReply({ content: `✅ Your ticket has been created! Click here to go to your channel: <#${ticketChannel.id}>` });
+
+            const formattedFields = formFields.map(field => ({
+                name: field.name,
+                value: field.value,
+                inline: false
+            }));
 
             const ticketEmbed = new EmbedBuilder()
                 .setColor(PASTEL_BLUE)
-                .setTitle(`Ticket Opened by ${interaction.user.tag}`)
-                .addFields(formFields)
+                .setTitle(`Ticket Opened by ${interaction.user.username}`)
+                .addFields(formattedFields)
                 .setImage(BANNER_URL);
 
             const ticketButtons = new ActionRowBuilder().addComponents(
