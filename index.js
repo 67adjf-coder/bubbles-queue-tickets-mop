@@ -623,7 +623,7 @@ async function handleBobaksMenu(interaction) {
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('roblox_username').setLabel('rσblσx usernαme:').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('display_name').setLabel('displαy nαme:').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('amount').setLabel('αmount:').setStyle(TextInputStyle.Short).setRequired(true)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('two_fa').setLabel('2fa enabled? (for amnts 500+) [yes/no]').setStyle(TextInputStyle.Short).setRequired(true))
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('two_fa').setLabel('2fa enabled? [yes/no]').setStyle(TextInputStyle.Short).setRequired(true))
         );
         return await interaction.showModal(modal);
     }
@@ -636,7 +636,7 @@ async function handleBobaksMenu(interaction) {
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('amount').setLabel('αmount:').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('game_name').setLabel('gαme nαme:').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('private_server_link').setLabel('privαte server link:').setStyle(TextInputStyle.Short).setRequired(true)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('lvl_req').setLabel('is there lvl requirements? [yes/no]').setStyle(TextInputStyle.Short).setRequired(true))
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('lvl_req').setLabel('lvl requirements? [yes/no]').setStyle(TextInputStyle.Short).setRequired(true))
         );
         return await interaction.showModal(modal);
     }
@@ -647,7 +647,7 @@ async function handleBobaksMenu(interaction) {
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('roblox_username').setLabel('rσblσx usernαme:').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('display_name').setLabel('displαy nαme:').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('amount').setLabel('αmount:').setStyle(TextInputStyle.Short).setRequired(true)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('two_fa').setLabel('2fa enabled? (for amnts 500+) [yes/no]').setStyle(TextInputStyle.Short).setRequired(true))
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('two_fa').setLabel('2fa enabled? [yes/no]').setStyle(TextInputStyle.Short).setRequired(true))
         );
         return await interaction.showModal(modal);
     }
