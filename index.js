@@ -11,11 +11,11 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
-    AttachmentBuilder,
     PermissionFlagsBits,
     ChannelType,
     StringSelectMenuBuilder,
-    StringSelectMenuOptionBuilder
+    StringSelectMenuOptionBuilder,
+    MessageFlags
 } = require('discord.js');
 const express = require('express');
 const QRCode = require('qrcode');
@@ -252,7 +252,7 @@ _ _`;
 
 async function handleQueueCommand(interaction) {
     if (!isStaff(interaction.member)) {
-        return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+        return interaction.reply({ content: 'You do not have permission to use this command.', flags: MessageFlags.Ephemeral });
     }
 
     const buyer = interaction.options.getUser('buyer');
@@ -274,7 +274,7 @@ async function handleQueueCommand(interaction) {
         staffId: staffUser.id
     });
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const localEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
@@ -322,7 +322,7 @@ _ _`
 
 async function handleQueueButtons(interaction) {
     if (!isStaff(interaction.member)) {
-        return interaction.reply({ content: 'Only staff can update queue status.', ephemeral: true });
+        return interaction.reply({ content: 'Only staff can update queue status.', flags: MessageFlags.Ephemeral });
     }
 
     const [, action, ticketChannelId] = interaction.customId.split('_');
@@ -436,7 +436,7 @@ _ _
         new ButtonBuilder().setCustomId('btn_others').setLabel('others').setStyle(ButtonStyle.Secondary)
     );
 
-    await interaction.reply({ content: 'Ticket panel sent to channel!', ephemeral: true });
+    await interaction.reply({ content: 'Ticket panel sent to channel!', flags: MessageFlags.Ephemeral });
     await interaction.channel.send({ embeds: [embed], components: [row] });
 }
 
@@ -447,7 +447,7 @@ async function handleTicketButtons(interaction) {
         if (interaction.member && interaction.member.roles.cache.has(RESTRICTED_TICKET_ROLE_ID)) {
             return await interaction.reply({
                 content: `You cannot open a ticket right now. You must vouch your previous item(s) in [vouch-items](${VOUCH_URL}) to regain access to create a ticket!`,
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
     }
@@ -473,7 +473,7 @@ _ _`
             new ButtonBuilder().setCustomId('btn_premiums').setLabel('premiums').setStyle(ButtonStyle.Secondary)
         );
 
-        return await interaction.reply({ embeds: [orderEmbed], components: [row], ephemeral: true });
+        return await interaction.reply({ embeds: [orderEmbed], components: [row], flags: MessageFlags.Ephemeral });
     }
 
     if (customId === 'btn_report') {
@@ -494,7 +494,7 @@ _ _`
             new ButtonBuilder().setCustomId('btn_report_action').setLabel('report').setStyle(ButtonStyle.Secondary)
         );
 
-        return await interaction.reply({ embeds: [reportEmbed], components: [row], ephemeral: true });
+        return await interaction.reply({ embeds: [reportEmbed], components: [row], flags: MessageFlags.Ephemeral });
     }
 
     if (customId === 'btn_others') {
@@ -507,7 +507,7 @@ _ _`
 
     if (customId === 'claim_ticket') {
         if (!isStaff(interaction.member)) {
-            return interaction.reply({ content: 'Only staff can claim tickets.', ephemeral: true });
+            return interaction.reply({ content: 'Only staff can claim tickets.', flags: MessageFlags.Ephemeral });
         }
 
         const ticketData = ticketStore.get(interaction.channelId) || {};
@@ -521,13 +521,13 @@ _ _`
         );
 
         await interaction.update({ components: [disabledRow] });
-        await interaction.channel.send(`ticket claimed by : ${interaction.user}`);
+        await interaction.channel.send(`tickette will be cαtered by: ${interaction.user}`);
         return;
     }
 
     if (customId === 'close_ticket') {
         if (!isStaff(interaction.member)) {
-            return interaction.reply({ content: 'Only staff can close tickets.', ephemeral: true });
+            return interaction.reply({ content: 'Only staff can close tickets.', flags: MessageFlags.Ephemeral });
         }
 
         const modal = new ModalBuilder().setCustomId('modal_close_reason').setTitle('Close Ticket');
@@ -559,7 +559,7 @@ async function handleOrderSubButtons(interaction) {
             );
 
         const row = new ActionRowBuilder().addComponents(selectMenu);
-        return await interaction.reply({ content: 'Please select from the menu below:', components: [row], ephemeral: true });
+        return await interaction.reply({ content: 'Please select from the menu below:', components: [row], flags: MessageFlags.Ephemeral });
     }
 
     if (customId === 'btn_topups') {
@@ -667,7 +667,7 @@ async function handleTicketModals(interaction) {
     const customId = interaction.customId;
 
     if (customId !== 'modal_close_reason') {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const usernameSanitized = interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, '');
         let channelPrefix = 'order';
@@ -904,7 +904,7 @@ const GCASH_QR_URL = 'https://cdn.discordapp.com/attachments/1553697060056866906
 
 async function handleMopCommand(interaction) {
     if (!isStaff(interaction.member)) {
-        return interaction.reply({ content: 'Only staff can use this command.', ephemeral: true });
+        return interaction.reply({ content: 'Only staff can use this command.', flags: MessageFlags.Ephemeral });
     }
 
     const amount = interaction.options.getNumber('amount');
@@ -951,7 +951,7 @@ async function handleMopButtons(interaction) {
         await interaction.reply({
             content: `Select your preferred payment method (Amount: ₱${amount}):`,
             components: [row],
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
         return;
     }
@@ -974,10 +974,10 @@ async function handleMopButtons(interaction) {
     }
 
     if (customId === 'copy_maya_num') {
-        return await interaction.reply({ content: '`09184552148`', ephemeral: true });
+        return await interaction.reply({ content: '`09184552148`', flags: MessageFlags.Ephemeral });
     }
     if (customId === 'copy_gotyme_num') {
-        return await interaction.reply({ content: '`016381151370`', ephemeral: true });
+        return await interaction.reply({ content: '`016381151370`', flags: MessageFlags.Ephemeral });
     }
 }
 
