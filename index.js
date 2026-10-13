@@ -224,7 +224,7 @@ client.on('messageCreate', async (message) => {
             await loadingMsg.edit({ content: '✅ Receipt processed!', embeds: [receiptEmbed] });
 
         } catch (error) {
-            console.error('OCR Processing Error details:', error);
+            console.error('OCR Processing Error details:', error.message || error);
             await loadingMsg.edit('❌ Failed to read the receipt image. Please verify manually.');
         }
     }
@@ -402,7 +402,7 @@ _ _`
                 });
             }
         } catch (err) {
-            console.error('Could not send completion message to ticket channel:', err);
+            console.error('Could not send completion message to ticket channel:', err.message || err);
         }
     }
 }
@@ -694,7 +694,6 @@ async function handleTicketModals(interaction) {
             targetCategoryId = OTHERS_CATEGORY_ID;
         }
 
-        // Extract fields depending on modal
         if (customId === 'modal_gamepass_ct') {
             formFields = [
                 { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
@@ -803,7 +802,7 @@ async function handleTicketModals(interaction) {
                 components: [ticketButtons]
             });
         } catch (err) {
-            console.error('Failed to create ticket channel:', err);
+            console.error('Failed to create ticket channel:', err.message || err);
             await interaction.editReply({ content: 'Failed to create ticket channel. Please check bot permissions or Category ID configuration.' });
         }
         return;
@@ -828,7 +827,6 @@ async function handleTicketModals(interaction) {
                     poweredBy: false
                 });
 
-                // Transcript Channel Embed Layout
                 const transcriptEmbed = new EmbedBuilder()
                     .setColor(PASTEL_BLUE)
                     .setDescription(
@@ -849,7 +847,6 @@ _ _`
                     transcriptMsg = await transcriptChannel.send({ embeds: [transcriptEmbed], files: [transcriptFile] });
                 }
 
-                // DM User Embed Layout
                 const dmEmbed = new EmbedBuilder()
                     .setColor(PASTEL_BLUE)
                     .setDescription(
@@ -861,7 +858,6 @@ _ _`
                     )
                     .setImage(BANNER_URL);
 
-                // Create a transcript link button if message URL is available
                 let transcriptComponents = [];
                 if (transcriptMsg) {
                     const transcriptLinkButton = new ButtonBuilder()
@@ -877,14 +873,14 @@ _ _`
                         await buyerUser.send({ embeds: [dmEmbed], components: transcriptComponents });
                     }
                 } catch (dmErr) {
-                    console.error('Could not send DM to buyer:', dmErr);
+                    console.error('Could not send DM to buyer:', dmErr.message || dmErr);
                 }
 
                 ticketStore.delete(channel.id);
                 await channel.delete();
 
             } catch (err) {
-                console.error('Error during ticket closure and transcript generation:', err);
+                console.error('Error during ticket closure and transcript generation:', err.message || err);
             }
         }, 10000);
     }
