@@ -763,9 +763,11 @@ async function handleTicketModals(interaction) {
         const channelName = `${channelPrefix}-${usernameSanitized}`;
 
         try {
+            // Give the bot explicit permissions to view and send messages in the channel it creates
             const permissionOverwrites = [
                 { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] }
+                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
+                { id: interaction.client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ManageChannels] }
             ];
 
             STAFF_ROLE_IDS.forEach(roleId => {
@@ -802,7 +804,7 @@ async function handleTicketModals(interaction) {
                 components: [ticketButtons]
             });
         } catch (err) {
-            console.error('Failed to create ticket channel:', err.message || err);
+            console.error('Failed to create ticket channel or send message:', err.message || err);
             await interaction.editReply({ content: 'Failed to create ticket channel. Please check bot permissions or Category ID configuration.' });
         }
         return;
