@@ -857,9 +857,8 @@ _ _`
                     .setImage(BANNER_URL);
 
                 const transcriptChannel = interaction.guild.channels.cache.get(TRANSCRIPT_CHANNEL_ID);
-                let transcriptMsg = null;
                 if (transcriptChannel) {
-                    transcriptMsg = await transcriptChannel.send({ embeds: [transcriptEmbed], files: [transcriptFile] });
+                    await transcriptChannel.send({ embeds: [transcriptEmbed], files: [transcriptFile] });
                 }
 
                 const dmEmbed = new EmbedBuilder()
@@ -869,23 +868,16 @@ _ _`
                ❦     **𝓣ickette __𝓒losed__**
 -# _ _         thαnk you for trusting coαstαl cαrt !
 > -# _ _     your tickette wαs __cαtered__ by : ${claimedByStaffId}
+
+-# here is the html transcript file of your ticket session.
 _ _`
                     )
                     .setImage(BANNER_URL);
 
-                let transcriptComponents = [];
-                if (transcriptMsg) {
-                    const transcriptLinkButton = new ButtonBuilder()
-                        .setLabel('view transcript')
-                        .setStyle(ButtonStyle.Link)
-                        .setURL(transcriptMsg.url);
-                    transcriptComponents.push(new ActionRowBuilder().addComponents(transcriptLinkButton));
-                }
-
                 try {
                     const buyerUser = await client.users.fetch(buyerId).catch(() => null);
                     if (buyerUser) {
-                        await buyerUser.send({ embeds: [dmEmbed], components: transcriptComponents }).catch(dmErr => {
+                        await buyerUser.send({ embeds: [dmEmbed], files: [transcriptFile] }).catch(dmErr => {
                             console.log(`Could not send DM to user ${buyerId}:`, dmErr.message);
                         });
                     }
