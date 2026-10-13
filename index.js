@@ -789,8 +789,6 @@ async function handleTicketModals(interaction) {
 
             ticketStore.set(ticketChannel.id, { buyerId: interaction.user.id, claimedByStaffId: null });
 
-            await interaction.editReply({ content: `✅ Your ticket has been created! Click here to go to your channel: <#${ticketChannel.id}>` });
-
             const formattedFields = formFields.map(field => ({
                 name: field.name,
                 value: field.value || 'N/A',
@@ -815,6 +813,9 @@ async function handleTicketModals(interaction) {
                 embeds: [ticketEmbed],
                 components: [ticketButtons]
             });
+
+            await interaction.editReply({ content: `✅ Your ticket has been created! Click here to go to your channel: <#${ticketChannel.id}>` });
+
         } catch (err) {
             console.error('Failed to create ticket channel or send message:', err.message || err);
             await interaction.editReply({ content: 'Failed to create ticket channel. Please check bot permissions or Category ID configuration.' });
@@ -884,10 +885,12 @@ _ _`
                 try {
                     const buyerUser = await client.users.fetch(buyerId).catch(() => null);
                     if (buyerUser) {
-                        await buyerUser.send({ embeds: [dmEmbed], components: transcriptComponents });
+                        await buyerUser.send({ embeds: [dmEmbed], components: transcriptComponents }).catch(dmErr => {
+                            console.log(`Could not send DM to user ${buyerId}:`, dmErr.message);
+                        });
                     }
                 } catch (dmErr) {
-                    console.error('Could not send DM to buyer:', dmErr.message || dmErr);
+                    console.error('Could not fetch or message buyer:', dmErr.message || dmErr);
                 }
 
                 ticketStore.delete(channel.id);
@@ -1000,7 +1003,7 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
     if (mopType === 'gcash') {
         descriptionText = 
 `_ _
-# _ _     Glca**s**h   (  001  )    
+# _ _     𝓖ca**s**h   (  001  )    
 ~~                                                                        ~~
           \`    0918  455  2148   \`
 ~~                                                                        ~~
