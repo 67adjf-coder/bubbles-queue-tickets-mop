@@ -782,12 +782,11 @@ async function handleTicketModals(interaction) {
 
             ticketStore.set(ticketChannel.id, { buyerId: interaction.user.id, claimedByStaffId: null });
 
-            // Redirect user directly to their newly created ticket channel via clickable channel mention
             await interaction.editReply({ content: `✅ Your ticket has been created! Click here to go to your channel: <#${ticketChannel.id}>` });
 
             const formattedFields = formFields.map(field => ({
                 name: field.name,
-                value: field.value,
+                value: field.value || 'N/A',
                 inline: false
             }));
 
