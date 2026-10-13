@@ -694,70 +694,74 @@ async function handleTicketModals(interaction) {
             targetCategoryId = OTHERS_CATEGORY_ID;
         }
 
-        if (customId === 'modal_gamepass_ct') {
-            formFields = [
-                { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
-                { name: 'Gamepass Link', value: interaction.fields.getTextInputValue('gamepass_link') },
-                { name: 'Amount to Purchase', value: interaction.fields.getTextInputValue('amount') }
-            ];
-        } else if (customId === 'modal_viaplus_rush') {
-            formFields = [
-                { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
-                { name: 'Display Name', value: interaction.fields.getTextInputValue('display_name') },
-                { name: 'Amount', value: interaction.fields.getTextInputValue('amount') },
-                { name: '2FA Enabled?', value: interaction.fields.getTextInputValue('two_fa') }
-            ];
-        } else if (customId === 'modal_ingame_gifting') {
-            formFields = [
-                { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
-                { name: 'Display Name', value: interaction.fields.getTextInputValue('display_name') },
-                { name: 'Amount', value: interaction.fields.getTextInputValue('amount') },
-                { name: 'Game Name', value: interaction.fields.getTextInputValue('game_name') },
-                { name: 'Private Server Link', value: interaction.fields.getTextInputValue('private_server_link') },
-                { name: 'Lvl Requirements?', value: interaction.fields.getTextInputValue('lvl_req') }
-            ];
-        } else if (customId === 'modal_viaplus_wtw') {
-            formFields = [
-                { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
-                { name: 'Display Name', value: interaction.fields.getTextInputValue('display_name') },
-                { name: 'Amount', value: interaction.fields.getTextInputValue('amount') },
-                { name: '2FA Enabled?', value: interaction.fields.getTextInputValue('two_fa') }
-            ];
-        } else if (customId === 'modal_group_payout') {
-            formFields = [
-                { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
-                { name: 'Display Name', value: interaction.fields.getTextInputValue('display_name') },
-                { name: 'Amount', value: interaction.fields.getTextInputValue('amount') }
-            ];
-        } else if (customId === 'modal_topups') {
-            formFields = [
-                { name: 'Game Name', value: interaction.fields.getTextInputValue('game_name') },
-                { name: 'Order Name', value: interaction.fields.getTextInputValue('order_name') },
-                { name: 'In-Game Details', value: interaction.fields.getTextInputValue('ingame_details') },
-                { name: 'Quantity', value: interaction.fields.getTextInputValue('quantity') }
-            ];
-        } else if (customId === 'modal_dc_items') {
-            formFields = [
-                { name: 'Item Name', value: interaction.fields.getTextInputValue('item_name') },
-                { name: 'Gift Link / Login', value: interaction.fields.getTextInputValue('gift_link') },
-                { name: 'Quantity', value: interaction.fields.getTextInputValue('quantity') }
-            ];
-        } else if (customId === 'modal_premiums') {
-            formFields = [
-                { name: 'Item Name', value: interaction.fields.getTextInputValue('item_name') },
-                { name: 'Subscription', value: interaction.fields.getTextInputValue('subscription') },
-                { name: 'Quantity', value: interaction.fields.getTextInputValue('quantity') }
-            ];
-        } else if (customId === 'modal_report') {
-            formFields = [
-                { name: 'Discord Username', value: interaction.fields.getTextInputValue('dc_username') },
-                { name: 'Report Reason', value: interaction.fields.getTextInputValue('report_reason') },
-                { name: 'Vouch Link', value: interaction.fields.getTextInputValue('vouch_link') }
-            ];
-        } else if (customId === 'modal_others') {
-            formFields = [
-                { name: 'Reason for opening a ticket', value: interaction.fields.getTextInputValue('reason') }
-            ];
+        try {
+            if (customId === 'modal_gamepass_ct') {
+                formFields = [
+                    { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
+                    { name: 'Gamepass Link', value: interaction.fields.getTextInputValue('gamepass_link') },
+                    { name: 'Amount to Purchase', value: interaction.fields.getTextInputValue('amount') }
+                ];
+            } else if (customId === 'modal_viaplus_rush') {
+                formFields = [
+                    { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
+                    { name: 'Display Name', value: interaction.fields.getTextInputValue('display_name') },
+                    { name: 'Amount', value: interaction.fields.getTextInputValue('amount') },
+                    { name: '2FA Enabled?', value: interaction.fields.getTextInputValue('two_fa') }
+                ];
+            } else if (customId === 'modal_ingame_gifting') {
+                formFields = [
+                    { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
+                    { name: 'Display Name', value: interaction.fields.getTextInputValue('display_name') },
+                    { name: 'Amount', value: interaction.fields.getTextInputValue('amount') },
+                    { name: 'Game Name', value: interaction.fields.getTextInputValue('game_name') },
+                    { name: 'Private Server Link', value: interaction.fields.getTextInputValue('private_server_link') },
+                    { name: 'Lvl Requirements?', value: interaction.fields.getTextInputValue('lvl_req') }
+                ];
+            } else if (customId === 'modal_viaplus_wtw') {
+                formFields = [
+                    { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
+                    { name: 'Display Name', value: interaction.fields.getTextInputValue('display_name') },
+                    { name: 'Amount', value: interaction.fields.getTextInputValue('amount') },
+                    { name: '2FA Enabled?', value: interaction.fields.getTextInputValue('two_fa') }
+                ];
+            } else if (customId === 'modal_group_payout') {
+                formFields = [
+                    { name: 'Roblox Username', value: interaction.fields.getTextInputValue('roblox_username') },
+                    { name: 'Display Name', value: interaction.fields.getTextInputValue('display_name') },
+                    { name: 'Amount', value: interaction.fields.getTextInputValue('amount') }
+                ];
+            } else if (customId === 'modal_topups') {
+                formFields = [
+                    { name: 'Game Name', value: interaction.fields.getTextInputValue('game_name') },
+                    { name: 'Order Name', value: interaction.fields.getTextInputValue('order_name') },
+                    { name: 'In-Game Details', value: interaction.fields.getTextInputValue('ingame_details') },
+                    { name: 'Quantity', value: interaction.fields.getTextInputValue('quantity') }
+                ];
+            } else if (customId === 'modal_dc_items') {
+                formFields = [
+                    { name: 'Item Name', value: interaction.fields.getTextInputValue('item_name') },
+                    { name: 'Gift Link / Login', value: interaction.fields.getTextInputValue('gift_link') },
+                    { name: 'Quantity', value: interaction.fields.getTextInputValue('quantity') }
+                ];
+            } else if (customId === 'modal_premiums') {
+                formFields = [
+                    { name: 'Item Name', value: interaction.fields.getTextInputValue('item_name') },
+                    { name: 'Subscription', value: interaction.fields.getTextInputValue('subscription') },
+                    { name: 'Quantity', value: interaction.fields.getTextInputValue('quantity') }
+                ];
+            } else if (customId === 'modal_report') {
+                formFields = [
+                    { name: 'Discord Username', value: interaction.fields.getTextInputValue('dc_username') },
+                    { name: 'Report Reason', value: interaction.fields.getTextInputValue('report_reason') },
+                    { name: 'Vouch Link', value: interaction.fields.getTextInputValue('vouch_link') }
+                ];
+            } else if (customId === 'modal_others') {
+                formFields = [
+                    { name: 'Reason for opening a ticket', value: interaction.fields.getTextInputValue('reason') }
+                ];
+            }
+        } catch (fieldErr) {
+            console.error('Error fetching modal text input value:', fieldErr.message);
         }
 
         const channelName = `${channelPrefix}-${usernameSanitized}`;
