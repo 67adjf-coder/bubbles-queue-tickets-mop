@@ -258,6 +258,8 @@ async function handleQueueCommand(interaction) {
         return interaction.reply({ content: 'You do not have permission to use this command.', flags: MessageFlags.Ephemeral });
     }
 
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const buyer = interaction.options.getUser('buyer');
     const item = interaction.options.getString('item');
     const info = interaction.options.getString('info');
@@ -276,8 +278,6 @@ async function handleQueueCommand(interaction) {
         price,
         staffId: staffUser.id
     });
-
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const localEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
@@ -414,6 +414,9 @@ _ _`
 // MODULE 2: TICKET SYSTEM FUNCTIONS
 // ==========================================
 async function handleTicketSetupCommand(interaction) {
+    // Defer immediately to prevent "The application did not respond"
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const embed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
         .setDescription(
@@ -439,8 +442,8 @@ _ _
         new ButtonBuilder().setCustomId('btn_others').setLabel('others').setStyle(ButtonStyle.Secondary)
     );
 
-    await interaction.reply({ content: 'Ticket panel sent to channel!', flags: MessageFlags.Ephemeral });
     await interaction.channel.send({ embeds: [embed], components: [row] });
+    await interaction.editReply({ content: 'Ticket panel sent to channel!' });
 }
 
 async function handleTicketButtons(interaction) {
@@ -631,7 +634,6 @@ async function handleBobaksMenu(interaction) {
         return await interaction.showModal(modal);
     }
 
-    // FIXED: Reduced to 5 Action Rows to fit Discord limits
     if (val === 'ingame_gifting') {
         const modal = new ModalBuilder().setCustomId('modal_ingame_gifting').setTitle('In-Game Gifting Form');
         modal.addComponents(
@@ -904,6 +906,8 @@ async function handleMopCommand(interaction) {
         return interaction.reply({ content: 'Only staff can use this command.', flags: MessageFlags.Ephemeral });
     }
 
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const amount = interaction.options.getNumber('amount');
 
     const mainEmbed = new EmbedBuilder()
@@ -930,7 +934,8 @@ _ _`
             .setStyle(ButtonStyle.Secondary)
     );
 
-    await interaction.reply({ embeds: [mainEmbed], components: [row] });
+    await interaction.channel.send({ embeds: [mainEmbed], components: [row] });
+    await interaction.editReply({ content: 'MOP panel sent successfully!' });
 }
 
 async function handleMopButtons(interaction) {
