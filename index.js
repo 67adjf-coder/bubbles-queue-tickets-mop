@@ -631,14 +631,14 @@ async function handleBobaksMenu(interaction) {
         return await interaction.showModal(modal);
     }
 
+    // FIXED: Reduced to 5 Action Rows to fit Discord limits
     if (val === 'ingame_gifting') {
         const modal = new ModalBuilder().setCustomId('modal_ingame_gifting').setTitle('In-Game Gifting Form');
         modal.addComponents(
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('roblox_username').setLabel('rσblσx usernαme:').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('display_name').setLabel('displαy nαme:').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('amount').setLabel('αmount:').setStyle(TextInputStyle.Short).setRequired(true)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('game_name').setLabel('gαme nαme:').setStyle(TextInputStyle.Short).setRequired(true)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('private_server_link').setLabel('privαte server link:').setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('game_details').setLabel('gαme nαme & private server link:').setStyle(TextInputStyle.Paragraph).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('lvl_req').setLabel('lvl requirements? [yes/no]').setStyle(TextInputStyle.Short).setRequired(true))
         );
         return await interaction.showModal(modal);
@@ -719,8 +719,7 @@ async function handleTicketModals(interaction) {
                 { name: 'Roblox Username', value: getVal('roblox_username') },
                 { name: 'Display Name', value: getVal('display_name') },
                 { name: 'Amount', value: getVal('amount') },
-                { name: 'Game Name', value: getVal('game_name') },
-                { name: 'Private Server Link', value: getVal('private_server_link') },
+                { name: 'Game Name & Server Link', value: getVal('game_details') },
                 { name: 'Lvl Requirements?', value: getVal('lvl_req') }
             ];
         } else if (customId === 'modal_viaplus_wtw') {
