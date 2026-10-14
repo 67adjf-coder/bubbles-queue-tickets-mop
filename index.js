@@ -31,8 +31,13 @@ require('dotenv').config();
 // ==========================================
 const app = express();
 const PORT = process.env.PORT || 10000;
+
 app.get('/', (req, res) => res.send('Combined Coastal Cart Bot is online.'));
-app.listen(PORT, '0.0.0.0', () => console.log(`Web server listening on port ${PORT}`));
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Web server listening on port ${PORT}`);
+});
 
 const STAFF_ROLE_IDS = ['1507220913249325116', '1533372358755221566'];
 const RESTRICTED_TICKET_ROLE_ID = '1557329338943283240'; // No-Vouch Role ID
@@ -77,8 +82,10 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
-    ]
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildPresences
+    ],
+    rest: { timeout: 60000 }
 });
 
 const commands = [
@@ -104,10 +111,9 @@ const commands = [
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
-    // Set bot status
-    client.user.setActivity({
-        name: 'your tickets!',
-        type: ActivityType.Watching
+    client.user.setPresence({
+        activities: [{ name: 'your tickets!', type: ActivityType.Watching }],
+        status: 'online'
     });
 
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
@@ -1054,19 +1060,13 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
 }
 
 // ==========================================
-// BOT LOGIN WITH LOGGING & ERROR HANDLING
+// BOT LOGIN SEQUENCE
 // ==========================================
-console.log('Attempting to log into Discord Gateway...');
-
-if (!process.env.DISCORD_TOKEN) {
-    console.error('CRITICAL ERROR: DISCORD_TOKEN is missing or undefined in environment variables!');
-} else {
-    console.log(`Token detected (Length: ${process.env.DISCORD_TOKEN.length} characters). Connecting...`);
-}
-
-client.login(process.env.DISCORD_TOKEN)
-    .then(() => console.log('Login sequence initialized successfully.'))
-    .catch(err => {
-        console.error('CRITICAL ERROR: Failed to log into Discord Gateway:');
-        console.error(err);
-    });
+setTimeout(() => {
+    console.log('Initiating Discord client login...');
+    client.login(process.env.DISCORD_TOKEN)
+        .then(() => console.log('Successfully connected to Gateway.'))
+        .catch(err => {
+            console.error('Fatal Login Error:', err);
+        });
+}, 2000);
