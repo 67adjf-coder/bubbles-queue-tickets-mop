@@ -1053,4 +1053,20 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
     }
 }
 
-client.login(process.env.DISCORD_TOKEN);
+// ==========================================
+// BOT LOGIN WITH LOGGING & ERROR HANDLING
+// ==========================================
+console.log('Attempting to log into Discord Gateway...');
+
+if (!process.env.DISCORD_TOKEN) {
+    console.error('CRITICAL ERROR: DISCORD_TOKEN is missing or undefined in environment variables!');
+} else {
+    console.log(`Token detected (Length: ${process.env.DISCORD_TOKEN.length} characters). Connecting...`);
+}
+
+client.login(process.env.DISCORD_TOKEN)
+    .then(() => console.log('Login sequence initialized successfully.'))
+    .catch(err => {
+        console.error('CRITICAL ERROR: Failed to log into Discord Gateway:');
+        console.error(err);
+    });
