@@ -27,7 +27,7 @@ const discordTranscripts = require('discord-html-transcripts');
 require('dotenv').config();
 
 // ==========================================
-// CONFIGURATION & SETUP
+// CONFIGURATION & EXPRESS SETUP
 // ==========================================
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -36,7 +36,7 @@ app.get('/', (req, res) => res.send('Combined Coastal Cart Bot is online.'));
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Web server listening on port ${PORT}`);
+    console.log(`[Express] Web server bound and listening on port ${PORT}`);
 });
 
 const STAFF_ROLE_IDS = ['1507220913249325116', '1533372358755221566'];
@@ -75,17 +75,22 @@ function isStaff(member) {
 }
 
 // ==========================================
-// SLASH COMMAND DEFINITIONS & REGISTRATION
+// DISCORD CLIENT INITIALIZATION
 // ==========================================
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildPresences
+        GatewayIntentBits.GuildMembers
     ],
-    rest: { timeout: 60000 }
+    ws: {
+        properties: {
+            os: 'linux',
+            browser: 'discord.js',
+            device: 'discord.js'
+        }
+    }
 });
 
 const commands = [
@@ -109,7 +114,7 @@ const commands = [
 ].map(cmd => cmd.toJSON());
 
 client.once('ready', async () => {
-    console.log(`Logged in as ${client.user.tag}!`);
+    console.log(`[Discord Gateway] Logged in as ${client.user.tag}!`);
 
     client.user.setPresence({
         activities: [{ name: 'your tickets!', type: ActivityType.Watching }],
@@ -119,9 +124,9 @@ client.once('ready', async () => {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     try {
         await rest.put(Routes.applicationCommands(client.user.id), { body: commands });
-        console.log('Successfully registered all slash commands globally!');
+        console.log('[Slash Commands] Registered all slash commands globally!');
     } catch (err) {
-        console.error('Error registering slash commands:', err);
+        console.error('[Slash Commands Error]', err);
     }
 });
 
@@ -1033,7 +1038,7 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
     } else if (mopType === 'gotyme') {
         descriptionText = 
 `_ _
-# _ _     𝓖oty**m**e   (  003  )    
+# _ _     Glory**m**e   (  003  )    
 ~~                                                                        ~~
           \`    0163 8115 1370   \`
 ~~                                                                        ~~
@@ -1060,13 +1065,9 @@ async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
 }
 
 // ==========================================
-// BOT LOGIN SEQUENCE
+// BOT LOGIN INITIALIZATION
 // ==========================================
-setTimeout(() => {
-    console.log('Initiating Discord client login...');
-    client.login(process.env.DISCORD_TOKEN)
-        .then(() => console.log('Successfully connected to Gateway.'))
-        .catch(err => {
-            console.error('Fatal Login Error:', err);
-        });
-}, 2000);
+console.log('[Discord Gateway] Connecting client...');
+client.login(process.env.DISCORD_TOKEN).catch(err => {
+    console.error('[Discord Gateway Connection Error]', err);
+});
