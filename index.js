@@ -15,7 +15,8 @@ const {
     ChannelType,
     StringSelectMenuBuilder,
     StringSelectMenuOptionBuilder,
-    MessageFlags
+    MessageFlags,
+    ActivityType
 } = require('discord.js');
 const express = require('express');
 const QRCode = require('qrcode');
@@ -102,6 +103,13 @@ const commands = [
 
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
+
+    // Set bot status
+    client.user.setActivity({
+        name: 'your tickets!',
+        type: ActivityType.Watching
+    });
+
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     try {
         await rest.put(Routes.applicationCommands(client.user.id), { body: commands });
@@ -414,7 +422,6 @@ _ _`
 // MODULE 2: TICKET SYSTEM FUNCTIONS
 // ==========================================
 async function handleTicketSetupCommand(interaction) {
-    // Defer immediately to prevent "The application did not respond"
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const embed = new EmbedBuilder()
