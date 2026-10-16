@@ -27,7 +27,7 @@ const discordTranscripts = require('discord-html-transcripts');
 require('dotenv').config();
 
 // ==========================================
-// CONFIGURATION & EXPRESS SETUP
+// 0. CONFIGURATION & EXPRESS SETUP
 // ==========================================
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -57,25 +57,13 @@ let queueCounter = 1;
 const queueStore = new Map();
 const ticketStore = new Map();
 
-function getGMT8Time() {
-    return new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Asia/Manila',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    }).format(new Date());
-}
-
 function isStaff(member) {
     if (!member || !member.roles) return false;
     return STAFF_ROLE_IDS.some(roleId => member.roles.cache.has(roleId));
 }
 
 // ==========================================
-// DISCORD CLIENT INITIALIZATION
+// CLIENT INITIALIZATION & COMMAND REGISTRATION
 // ==========================================
 const client = new Client({
     intents: [
@@ -97,11 +85,12 @@ const commands = [
     new SlashCommandBuilder()
         .setName('queue-list')
         .setDescription('Create a new queue tracker for an order')
-        .addUserOption(opt => opt.setName('buyer').setDescription('Select the buyer').setRequired(true))
-        .addStringOption(opt => opt.setName('item').setDescription('Item bought').setRequired(true))
-        .addStringOption(opt => opt.setName('info').setDescription('Item info').setRequired(true))
-        .addStringOption(opt => opt.setName('payment').setDescription('Payment method').setRequired(true))
-        .addStringOption(opt => opt.setName('price').setDescription('Price paid').setRequired(true)),
+        .addUserOption(opt => opt.setName('buyer').setDescription('User who bought an item').setRequired(true))
+        .addStringOption(opt => opt.setName('qty').setDescription('Quantity').setRequired(true))
+        .addStringOption(opt => opt.setName('item').setDescription('Item name').setRequired(true))
+        .addStringOption(opt => opt.setName('info').setDescription('Item info (game name, via plus or payout, etc.)').setRequired(true))
+        .addStringOption(opt => opt.setName('price').setDescription('Price paid').setRequired(true))
+        .addStringOption(opt => opt.setName('payment').setDescription('Mode of payment').setRequired(true)),
 
     new SlashCommandBuilder()
         .setName('ticket-setup')
@@ -135,15 +124,15 @@ client.once('ready', async () => {
 // ==========================================
 client.on('interactionCreate', async (interaction) => {
     try {
-        // --- 1. QUEUE COMMAND MODULE ---
+        // --- QUEUE MODULE ---
         if (interaction.isChatInputCommand() && interaction.commandName === 'queue-list') {
             return handleQueueCommand(interaction);
         }
-        if (interaction.isButton() && interaction.customId.startsWith('queue_')) {
-            return handleQueueButtons(interaction);
+        if (interaction.isStringSelectMenu() && interaction.customId.startsWith('queue_menu_')) {
+            return handleQueueMenu(interaction);
         }
 
-        // --- 2. TICKET SETUP MODULE ---
+        // --- TICKET MODULE ---
         if (interaction.isChatInputCommand() && interaction.commandName === 'ticket-setup') {
             return handleTicketSetupCommand(interaction);
         }
@@ -163,7 +152,7 @@ client.on('interactionCreate', async (interaction) => {
             return handleTicketModals(interaction);
         }
 
-        // --- 3. MODE OF PAYMENT (MOP) MODULE ---
+        // --- MOP MODULE ---
         if (interaction.isChatInputCommand() && interaction.commandName === 'mop') {
             return handleMopCommand(interaction);
         }
@@ -252,24 +241,27 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-// ==========================================
-// MODULE 1: QUEUE SYSTEM FUNCTIONS
-// ==========================================
-function buildQueueEmbed(guildId, ticketChannelId, queueNum, buyerId, item, info, payment, price, staffId, statusText) {
-    const description = 
-`_ _
-     𓂃 𓈒𓏸‪‪ 𓇼    [ **tid**__a__**l** **w**~~a~~***ves*** ](https://discord.com/channels/${guildId}/${ticketChannelId})    ＃ __ ${queueNum} __‬‬
-~~                                                                                ~~
-<:blue:1554781672992407552>    <@${buyerId}>
->   ${item}    <:hearty:1554781762813558804>    ${info}
->   ${payment}  <:hearty:1554781762813558804> ${price}
-_ _
--# _ _        sea shore  ~~        ~~  <@${staffId}>
--# _ _        **   ${statusText}**  ${getGMT8Time()}
-~~                                                                                ~~
-_ _`;
 
-    return new EmbedBuilder().setColor(PASTEL_BLUE).setDescription(description);
+// ==========================================
+// SECTION 1: QUEUE SYSTEM MODULE (/queue-list)
+// ==========================================
+function buildQueueEmbed(guildId, ticketChannelId, queueNum, buyerId, qty, item, info, payment, price, staffId, statusText) {
+    const description = `
+_ _
+-# _ _     <:flower:1560691740456001659>     ** 𑂘__oft__  𝒲hιspᧉrs **  **. . .**   \` ₍ᐢ..ᐢ₎⁺ \`
+┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+-# _ _         cɑtᧉrᧉd wιth ℓovᧉ, <@${staffId}> <:zz_blueheart3:1555584821529546752> 
+-# _ _          <:glow_dots:1560696020852019310> <@${buyerId}>  ɑt  <#${ticketChannelId}>
+-# _ _          <:glow_dots:1560696020852019310> \` #${qty} \` (qty)     ~~         ~~   ${item}
+-# _ _          <:glow_dots:1560696020852019310>  ${info}     <:hart:1555857231814328331>    ₱\` ${price} \` vιɑ ( ${payment} )
+
+-# _ _                     your ιtᧉm ιs:  **${statusText}**
+    `;
+
+    return new EmbedBuilder()
+        .setColor(PASTEL_BLUE)
+        .setDescription(description)
+        .setTimestamp();
 }
 
 async function handleQueueCommand(interaction) {
@@ -280,10 +272,12 @@ async function handleQueueCommand(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const buyer = interaction.options.getUser('buyer');
+    const qty = interaction.options.getString('qty');
     const item = interaction.options.getString('item');
     const info = interaction.options.getString('info');
-    const payment = interaction.options.getString('payment');
     const price = interaction.options.getString('price');
+    const payment = interaction.options.getString('payment');
+
     const ticketChannelId = interaction.channelId;
     const staffUser = interaction.user;
     const currentQueueNum = queueCounter++;
@@ -291,6 +285,7 @@ async function handleQueueCommand(interaction) {
     queueStore.set(ticketChannelId, {
         queueNum: currentQueueNum,
         buyerId: buyer.id,
+        qty,
         item,
         info,
         payment,
@@ -300,19 +295,15 @@ async function handleQueueCommand(interaction) {
 
     const localEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
-        .setDescription(
-`_ _
-     \`    order  tracker  \`
-~~                                                        ~~
-> -# _ _ **nb & dekors**    \` \`    mto
-> -# _ _  **game topups**  \` \`    mins-hrs
-> -# _ _  **roblx bobaks**  \` \`    mins-days
-~~                                                        ~~
-> track your order [here](https://discord.com/channels/1507214174084927498/1539239066049060974) ! 𓆉
-> no rushing! pls, be patient.
-~~                                                        ~~
-_ _`
-        );
+        .setDescription(`
+_ _
+-# \\    order  tracker  \` ~~                                               ~~
+-# _ _  **nb & dekors**     \` \`    mto 
+-# _ _  **game topups**    \` \`    mins-hrs 
+-# _ _  **roblx bobaks**    \` \`    mins-days 
+~~                                               ~~ track your order [here](https://discord.com/channels/${interaction.guildId}/${QUEUE_CHANNEL_ID}) ! 𓆉 no rushing! pls, be patient. ~~                                               ~~ _ _
+        `)
+        .setTimestamp();
 
     await interaction.channel.send({ embeds: [localEmbed] });
     await interaction.editReply({ content: 'Queue logged successfully!' });
@@ -322,19 +313,40 @@ _ _`
         ticketChannelId,
         currentQueueNum,
         buyer.id,
+        qty,
         item,
         info,
         payment,
         price,
         staffUser.id,
-        '[ order status ]'
+        'in-quᧉuᧉ'
     );
 
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`queue_noted_${ticketChannelId}`).setEmoji('🐚').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId(`queue_proc_${ticketChannelId}`).setEmoji('🫧').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId(`queue_comp_${ticketChannelId}`).setEmoji('🐋').setStyle(ButtonStyle.Secondary)
-    );
+    const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId(`queue_menu_${ticketChannelId}`)
+        .setPlaceholder('select queue status...')
+        .addOptions([
+            {
+                label: 'noted',
+                description: 'Set status to noted by ownie',
+                value: 'noted',
+                emoji: '🐚'
+            },
+            {
+                label: 'processing',
+                description: 'Set status to now processing',
+                value: 'proc',
+                emoji: '🫧'
+            },
+            {
+                label: 'completed',
+                description: 'Set status to done & delivered',
+                value: 'comp',
+                emoji: '🐋'
+            }
+        ]);
+
+    const row = new ActionRowBuilder().addComponents(selectMenu);
 
     const queueChannel = await client.channels.fetch(QUEUE_CHANNEL_ID).catch(() => null);
     if (queueChannel) {
@@ -342,25 +354,27 @@ _ _`
     }
 }
 
-async function handleQueueButtons(interaction) {
+async function handleQueueMenu(interaction) {
     if (!isStaff(interaction.member)) {
         return interaction.reply({ content: 'Only staff can update queue status.', flags: MessageFlags.Ephemeral });
     }
 
-    const [, action, ticketChannelId] = interaction.customId.split('_');
-    let data = queueStore.get(ticketChannelId);
+    const customId = interaction.customId;
+    const ticketChannelId = customId.replace('queue_menu_', '');
+    const action = interaction.values[0]; // 'noted', 'proc', or 'comp'
 
+    let data = queueStore.get(ticketChannelId);
     if (!data) {
         const embed = interaction.message.embeds[0];
         if (!embed || !embed.description) return;
 
-        const queueMatch = embed.description.match(/＃ __ (\d+) __/);
         const buyerMatch = embed.description.match(/<@(\d+)>/);
-        const staffMatch = embed.description.match(/sea shore  ~~        ~~  <@(\d+)>/);
+        const staffMatch = embed.description.match(/cɑtᧉrᧉd wιth ℓovᧉ, <@(\d+)>/);
 
         data = {
-            queueNum: queueMatch ? queueMatch[1] : '?',
+            queueNum: '?',
             buyerId: buyerMatch ? buyerMatch[1] : interaction.user.id,
+            qty: '1',
             item: 'Item',
             info: 'Info',
             payment: 'Payment',
@@ -369,49 +383,64 @@ async function handleQueueButtons(interaction) {
         };
     }
 
-    let statusLabel = action === 'noted' ? 'NOTED' : action === 'proc' ? 'PROCESSING' : 'COMPLETED';
+    let statusLabel = 'in-quᧉuᧉ';
+    if (action === 'noted') statusLabel = 'notᧉd by owniᧉ';
+    else if (action === 'proc') statusLabel = 'now procᧉssing';
+    else if (action === 'comp') statusLabel = 'donᧉ & dᧉlivᧉrᧉd';
 
     const updatedEmbed = buildQueueEmbed(
         interaction.guildId,
         ticketChannelId,
         data.queueNum,
         data.buyerId,
+        data.qty,
         data.item,
         data.info,
         data.payment,
         data.price,
-        data.staffId,
+        interaction.user.id,
         statusLabel
     );
 
-    const updatedComponents = interaction.message.components.map(row => {
-        const newRow = new ActionRowBuilder();
-        row.components.forEach(btn => {
-            const btnBuilder = ButtonBuilder.from(btn);
-            if (btn.customId === interaction.customId) btnBuilder.setDisabled(true);
-            newRow.addComponents(btnBuilder);
-        });
-        return newRow;
-    });
+    await interaction.update({ embeds: [updatedEmbed], components: interaction.message.components });
 
-    await interaction.update({ embeds: [updatedEmbed], components: updatedComponents });
+    try {
+        const ticketChannel = await client.channels.fetch(ticketChannelId).catch(() => null);
+        if (ticketChannel) {
+            if (action === 'proc') {
+                const processingEmbed = new EmbedBuilder()
+                    .setColor(PASTEL_BLUE)
+                    .setDescription(`
+_ _
+            **ℓovᧉ  dᧉɑrly,**  <@${data.buyerId}>  !  <a:a009_bluebow1491899840941129808:1555584862511956129>  
+          
+           thᧉ __tidᧉs__ ɑrᧉ **ɑlignᧉd** . . . ɑnd
+       your order is now being __***processed.***__
 
-    if (action === 'comp') {
-        try {
-            const ticketChannel = await client.channels.fetch(ticketChannelId).catch(() => null);
-            if (ticketChannel) {
+           thɑnk you for wɑiting pɑtiently,
+          pleɑse do not rush peɑrl-keepers
+                    `)
+                    .setTimestamp();
+
+                await ticketChannel.send({
+                    content: `<@${data.buyerId}>`,
+                    embeds: [processingEmbed]
+                });
+            } 
+            else if (action === 'comp') {
                 const completionEmbed = new EmbedBuilder()
                     .setColor(PASTEL_BLUE)
-                    .setDescription(
-`_ _
-                    **   hey there,  coral ! ** 
--#    your order has been completed. kindly vouch us 
--#    within 12 hours to activate your item's warranty !
+                    .setDescription(`
 _ _
-> -# _ _        thank you for your trust & support !
-\`              𓆝 𓆟 𓆞 𓆝 𓆟        \`
-_ _`
-                    );
+            **ℓovᧉ  dᧉɑrly,**  <@${data.buyerId}>  !  <a:a009_bluebow1491899840941129808:1555584862511956129>  
+          
+           thᧉ __tidᧉs__ ɑrᧉ **ɑlignᧉd** . . . ɑnd
+       your order is now __***sent & delivered.***__
+
+           thɑnk you for wɑiting pɑtiently,
+          pleɑse do vouch the peɑrl-keepers
+                    `)
+                    .setTimestamp();
 
                 const vouchButtonRow = new ActionRowBuilder().addComponents(
                     new ButtonBuilder().setLabel('vouch here').setStyle(ButtonStyle.Link).setURL(VOUCH_URL)
@@ -423,45 +452,53 @@ _ _`
                     components: [vouchButtonRow]
                 });
             }
-        } catch (err) {
-            console.error('Could not send completion message to ticket channel:', err.message || err);
         }
+    } catch (err) {
+        console.error('Could not send notification message to ticket channel:', err.message || err);
     }
 }
 
+
 // ==========================================
-// MODULE 2: TICKET SYSTEM FUNCTIONS
+// SECTION 2: TICKET SYSTEM MODULE (/ticket-setup)
 // ==========================================
 async function handleTicketSetupCommand(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const embed = new EmbedBuilder()
+    // 1. Text Message Panel (Top Container)
+    const textEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
-        .setDescription(
-`_ _
-# _ _     tick__kette__ b*oo*th <:butterfly:1554370425587245066>
+        .setDescription(`
 _ _
-    always  ask  in  <#1507214174084927501> 
-    before ordering and opening a
-    ticket! 
-_ _
->  ꫂ❁  **tickette rules** :
-> \` \`    payment first before process
-> \` \`    do not open if you are unsure
-> \` \`    no trolling.  ticket troll = ban !
-> \` \`    reporting hrs: 1pm-10pm only
-> \` \`    voided if  reported  outside  ^`
-        )
-        .setImage(BANNER_URL);
+         𓈒   ୭ৎ         tιckᧉttᧉ     :    boothᧉ     ⛲ᨯ    
+-# _ _                    **reɑd notes before creɑting ɑ tix**
 
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('btn_order').setLabel('orders').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('btn_report').setLabel('reports').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('btn_others').setLabel('others').setStyle(ButtonStyle.Secondary)
+-# _ _          pɑyment first is required to purchɑse 
+-# _ _          **do not** creɑte  ɑ  ticket just to ɑsk us!
+-# _ _          iɑ tickette for 4 hours = closed + wɑrn
+-# _ _          **do not** troll just to try d buttons = ban
+-# _ _          use buttons ɑccordingly ɑnd correctly
+        `)
+        .setTimestamp();
+
+    // 2. Middle Container (Button Action Row)
+    const buttonRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('btn_order').setLabel('order').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('btn_report').setLabel('report').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('btn_others').setLabel('other').setStyle(ButtonStyle.Secondary)
     );
 
-    await interaction.channel.send({ embeds: [embed], components: [row] });
-    await interaction.editReply({ content: 'Ticket panel sent to channel!' });
+    // 3. Bottom Separator GIF Embed
+    const gifEmbed = new EmbedBuilder()
+        .setColor(PASTEL_BLUE)
+        .setImage('https://cdn.discordapp.com/attachments/1560207522521022494/1560703160811651254/tumblr_nabwdbnlD01qg67clo1_500_gif_500200.gif?ex=6ad3ad96&is=6ad25c16&hm=a4d79aa4ff23e9381c132e6458f009118ceb839a1b476fb166116c0734526542');
+
+    await interaction.channel.send({
+        embeds: [textEmbed, gifEmbed],
+        components: [buttonRow]
+    });
+
+    await interaction.editReply({ content: 'Ticket setup panel sent!' });
 }
 
 async function handleTicketButtons(interaction) {
@@ -482,7 +519,7 @@ async function handleTicketButtons(interaction) {
             .setDescription(
 `_ _
              <a:spiral:1555857356082909315>  **order**  __αwαy__  ! 
-> click  on  the button on the item 
+> click  on  the button on the item  
 > you wish to purchαse from here.
 -# **note**: this is αn αuto buy system. once u
 -# click the button, it will notify the stαffs!
@@ -689,385 +726,192 @@ async function handleBobaksMenu(interaction) {
 async function handleTicketModals(interaction) {
     const customId = interaction.customId;
 
-    if (customId !== 'modal_close_reason') {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-        const usernameSanitized = interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, '');
-        let channelPrefix = 'order';
-        let targetCategoryId = ORDER_CATEGORY_ID;
-        let formFields = [];
-
-        if (['modal_gamepass_ct', 'modal_viaplus_rush', 'modal_ingame_gifting', 'modal_viaplus_wtw', 'modal_group_payout'].includes(customId)) {
-            channelPrefix = 'rbx';
-            targetCategoryId = ORDER_CATEGORY_ID;
-        } else if (customId === 'modal_topups') {
-            channelPrefix = 'topup';
-            targetCategoryId = ORDER_CATEGORY_ID;
-        } else if (customId === 'modal_dc_items') {
-            channelPrefix = 'dc';
-            targetCategoryId = ORDER_CATEGORY_ID;
-        } else if (customId === 'modal_premiums') {
-            channelPrefix = 'prem';
-            targetCategoryId = ORDER_CATEGORY_ID;
-        } else if (customId === 'modal_report') {
-            channelPrefix = 'report';
-            targetCategoryId = REPORT_CATEGORY_ID;
-        } else if (customId === 'modal_others') {
-            channelPrefix = 'others';
-            targetCategoryId = OTHERS_CATEGORY_ID;
-        }
-
-        const getVal = (id) => {
-            try { return interaction.fields.getTextInputValue(id); } catch { return 'N/A'; }
-        };
-
-        if (customId === 'modal_gamepass_ct') {
-            formFields = [
-                { name: 'Roblox Username', value: getVal('roblox_username') },
-                { name: 'Gamepass Link', value: getVal('gamepass_link') },
-                { name: 'Amount to Purchase', value: getVal('amount') }
-            ];
-        } else if (customId === 'modal_viaplus_rush') {
-            formFields = [
-                { name: 'Roblox Username', value: getVal('roblox_username') },
-                { name: 'Display Name', value: getVal('display_name') },
-                { name: 'Amount', value: getVal('amount') },
-                { name: '2FA Enabled?', value: getVal('two_fa') }
-            ];
-        } else if (customId === 'modal_ingame_gifting') {
-            formFields = [
-                { name: 'Roblox Username', value: getVal('roblox_username') },
-                { name: 'Display Name', value: getVal('display_name') },
-                { name: 'Amount', value: getVal('amount') },
-                { name: 'Game Name & Server Link', value: getVal('game_details') },
-                { name: 'Lvl Requirements?', value: getVal('lvl_req') }
-            ];
-        } else if (customId === 'modal_viaplus_wtw') {
-            formFields = [
-                { name: 'Roblox Username', value: getVal('roblox_username') },
-                { name: 'Display Name', value: getVal('display_name') },
-                { name: 'Amount', value: getVal('amount') },
-                { name: '2FA Enabled?', value: getVal('two_fa') }
-            ];
-        } else if (customId === 'modal_group_payout') {
-            formFields = [
-                { name: 'Roblox Username', value: getVal('roblox_username') },
-                { name: 'Display Name', value: getVal('display_name') },
-                { name: 'Amount', value: getVal('amount') }
-            ];
-        } else if (customId === 'modal_topups') {
-            formFields = [
-                { name: 'Game Name', value: getVal('game_name') },
-                { name: 'Order Name', value: getVal('order_name') },
-                { name: 'In-Game Details', value: getVal('ingame_details') },
-                { name: 'Quantity', value: getVal('quantity') }
-            ];
-        } else if (customId === 'modal_dc_items') {
-            formFields = [
-                { name: 'Item Name', value: getVal('item_name') },
-                { name: 'Gift Link / Login', value: getVal('gift_link') },
-                { name: 'Quantity', value: getVal('quantity') }
-            ];
-        } else if (customId === 'modal_premiums') {
-            formFields = [
-                { name: 'Item Name', value: getVal('item_name') },
-                { name: 'Subscription', value: getVal('subscription') },
-                { name: 'Quantity', value: getVal('quantity') }
-            ];
-        } else if (customId === 'modal_report') {
-            formFields = [
-                { name: 'Discord Username', value: getVal('dc_username') },
-                { name: 'Report Reason', value: getVal('report_reason') },
-                { name: 'Vouch Link', value: getVal('vouch_link') }
-            ];
-        } else if (customId === 'modal_others') {
-            formFields = [
-                { name: 'Reason for opening a ticket', value: getVal('reason') }
-            ];
-        }
-
-        const channelName = `${channelPrefix}-${usernameSanitized}`;
-
-        try {
-            const permissionOverwrites = [
-                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
-                { id: interaction.client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ManageChannels] }
-            ];
-
-            STAFF_ROLE_IDS.forEach(roleId => {
-                permissionOverwrites.push({ id: roleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
-            });
-
-            const ticketChannel = await interaction.guild.channels.create({
-                name: channelName,
-                type: ChannelType.GuildText,
-                parent: targetCategoryId,
-                permissionOverwrites: permissionOverwrites
-            });
-
-            ticketStore.set(ticketChannel.id, { buyerId: interaction.user.id, claimedByStaffId: null });
-
-            const formattedFields = formFields.map(field => ({
-                name: field.name,
-                value: field.value || 'N/A',
-                inline: false
-            }));
-
-            const ticketEmbed = new EmbedBuilder()
-                .setColor(PASTEL_BLUE)
-                .setTitle(`Ticket Opened by ${interaction.user.username}`)
-                .addFields(formattedFields)
-                .setImage(BANNER_URL);
-
-            const ticketButtons = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('claim_ticket').setLabel('claim').setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('close_ticket').setLabel('close').setStyle(ButtonStyle.Secondary)
-            );
-
-            const staffPings = STAFF_ROLE_IDS.map(id => `<@&${id}>`).join(' ');
-
-            await ticketChannel.send({
-                content: `${staffPings} ${interaction.user}`,
-                embeds: [ticketEmbed],
-                components: [ticketButtons]
-            });
-
-            await interaction.editReply({ content: `✅ Your ticket has been created! Click here to go to your channel: <#${ticketChannel.id}>` });
-
-        } catch (err) {
-            console.error('Failed to create ticket channel or send message:', err.message || err);
-            await interaction.editReply({ content: 'Failed to create ticket channel. Please check bot permissions or Category ID configuration.' });
-        }
-        return;
-    }
-
     if (customId === 'modal_close_reason') {
+        if (!isStaff(interaction.member)) {
+            return interaction.reply({ content: 'Only staff can close tickets.', flags: MessageFlags.Ephemeral });
+        }
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const closeReason = interaction.fields.getTextInputValue('close_reason');
         const channel = interaction.channel;
-        const closedByStaffId = interaction.user.id;
 
-        const ticketData = ticketStore.get(channel.id) || {};
-        const buyerId = ticketData.buyerId || 'Unknown Buyer';
-        const claimedByStaffId = ticketData.claimedByStaffId ? `<@${ticketData.claimedByStaffId}>` : 'None';
+        try {
+            const transcript = await discordTranscripts.createTranscript(channel, {
+                limit: -1,
+                returnType: 'attachment',
+                filename: `transcript-${channel.name}.html`,
+                saveImages: true,
+                poweredBy: false
+            });
 
-        await interaction.reply('Ticket will be closed in 10 seconds, generating transcript!');
-
-        setTimeout(async () => {
-            try {
-                const transcriptFile = await discordTranscripts.createTranscript(channel, {
-                    limit: -1,
-                    fileName: `transcript-${channel.name}.html`,
-                    poweredBy: false
-                });
-
-                const transcriptEmbed = new EmbedBuilder()
+            const transcriptChannel = await client.channels.fetch(TRANSCRIPT_CHANNEL_ID).catch(() => null);
+            if (transcriptChannel) {
+                const closeEmbed = new EmbedBuilder()
                     .setColor(PASTEL_BLUE)
-                    .setDescription(
-`_ _
-               ❦     **𝓣ickette __𝓒losed__**
-> **opened by** : <@${buyerId}>
-> **catered by** : ${claimedByStaffId}
-> **closed by** : <@${closedByStaffId}>
-
-> **REASON** : ${closeReason}
-_ _`
+                    .setTitle('🔒 Ticket Closed')
+                    .addFields(
+                        { name: 'Ticket Name', value: `#${channel.name}`, inline: true },
+                        { name: 'Closed By', value: `${interaction.user}`, inline: true },
+                        { name: 'Reason', value: closeReason, inline: false }
                     )
-                    .setImage(BANNER_URL);
+                    .setTimestamp();
 
-                const transcriptChannel = interaction.guild.channels.cache.get(TRANSCRIPT_CHANNEL_ID);
-                if (transcriptChannel) {
-                    await transcriptChannel.send({ embeds: [transcriptEmbed], files: [transcriptFile] });
-                }
-
-                const dmEmbed = new EmbedBuilder()
-                    .setColor(PASTEL_BLUE)
-                    .setDescription(
-`_ _
-               ❦     **𝓣ickette __𝓒losed__**
--# _ _         thαnk you for trusting coαstαl cαrt !
-> -# _ _     your tickette wαs __cαtered__ by : ${claimedByStaffId}
-
--# here is the html transcript file of your ticket session.
-_ _`
-                    )
-                    .setImage(BANNER_URL);
-
-                try {
-                    const buyerUser = await client.users.fetch(buyerId).catch(() => null);
-                    if (buyerUser) {
-                        await buyerUser.send({ embeds: [dmEmbed], files: [transcriptFile] }).catch(dmErr => {
-                            console.log(`Could not send DM to user ${buyerId}:`, dmErr.message);
-                        });
-                    }
-                } catch (dmErr) {
-                    console.error('Could not fetch or message buyer:', dmErr.message || dmErr);
-                }
-
-                ticketStore.delete(channel.id);
-                await channel.delete();
-
-            } catch (err) {
-                console.error('Error during ticket closure and transcript generation:', err.message || err);
+                await transcriptChannel.send({ embeds: [closeEmbed], files: [transcript] });
             }
-        }, 10000);
-    }
-}
+        } catch (err) {
+            console.error('Failed to generate transcript:', err);
+        }
 
-// ==========================================
-// MODULE 3: MODE OF PAYMENT (MOP) FUNCTIONS
-// ==========================================
-const GCASH_QR_URL = 'https://cdn.discordapp.com/attachments/1553697060056866906/1555828587649568838/Screenshot_2026-10-03_at_2.27.13_PM.png?backend=b2&ex=6ac1f1c9&is=6ac0a049&hm=2e41195db20ad2cd8d5649692ff1365f5b54e0ea6eb26e5f03d35dc4ba88aa6d';
-
-async function handleMopCommand(interaction) {
-    if (!isStaff(interaction.member)) {
-        return interaction.reply({ content: 'Only staff can use this command.', flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ content: 'Closing ticket and generating transcript...' });
+        setTimeout(() => channel.delete().catch(() => {}), 3000);
+        return;
     }
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const amount = interaction.options.getNumber('amount');
+    const usernameSanitized = interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let channelPrefix = 'order';
+    let categoryId = ORDER_CATEGORY_ID;
 
-    const mainEmbed = new EmbedBuilder()
+    if (customId === 'modal_report') {
+        channelPrefix = 'report';
+        categoryId = REPORT_CATEGORY_ID;
+    } else if (customId === 'modal_others') {
+        channelPrefix = 'other';
+        categoryId = OTHERS_CATEGORY_ID;
+    }
+
+    const ticketChannel = await interaction.guild.channels.create({
+        name: `${channelPrefix}-${usernameSanitized}`,
+        type: ChannelType.GuildText,
+        parent: categoryId,
+        permissionOverwrites: [
+            { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+            { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles] },
+            ...STAFF_ROLE_IDS.map(roleId => ({ id: roleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles] }))
+        ]
+    });
+
+    const fieldsData = interaction.fields.fields.map(f => `> **${f.customId.replace(/_/g, ' ')}:**${f.value}`).join('\n');
+
+    const welcomeEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
         .setDescription(
 `_ _
-         ** [꒰ mode of payments accepted ꒱](https://coastal-cart.gg)**
-~~                                                                                ~~
--# _ _      gcash  ( no fee )      Ი𐑼      go-tyme ( + 10 )     
--# _ _      maya  ( + 10 )        Ი𐑼        paypal ( fnf )
-~~                                                                                ~~ 
-> -# _ _  send a clear screenshot  of  the  receipt. 
-> -# _ _  saved receipts will not be credited,  and 
-> -# _ _  a transaction history is required.
-~~                                                                                ~~
--# _ _  proceed with payment? click the button below!
+# _ _     ticket opened by ${interaction.user} <:butterfly:1554370425587245066>
+_ _
+thank you for opening a ticket! please wait patiently for our staff to assist you.
+_ _
+### Form Details:
+${fieldsData}
 _ _`
-        );
+        )
+        .setImage(BANNER_URL)
+        .setTimestamp();
 
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId(`proceed_payment_${amount}`)
-            .setLabel('proceed to payment')
-            .setStyle(ButtonStyle.Secondary)
+    const controlRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('claim_ticket').setLabel('claim ticket').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('close_ticket').setLabel('close ticket').setStyle(ButtonStyle.Danger)
     );
 
-    await interaction.channel.send({ embeds: [mainEmbed], components: [row] });
-    await interaction.editReply({ content: 'MOP panel sent successfully!' });
+    await ticketChannel.send({ content: `${interaction.user} <@&${STAFF_ROLE_IDS[0]}>`, embeds: [welcomeEmbed], components: [controlRow] });
+    ticketStore.set(ticketChannel.id, { ownerId: interaction.user.id });
+
+    await interaction.editReply({ content: `Your ticket has been created! Head over to <#${ticketChannel.id}>` });
+}
+
+
+// ==========================================
+// SECTION 3: MODE OF PAYMENT MODULE (/mop)
+// ==========================================
+async function handleMopCommand(interaction) {
+    if (!isStaff(interaction.member)) {
+        return interaction.reply({ content: 'You do not have permission to use this command.', flags: MessageFlags.Ephemeral });
+    }
+
+    const amount = interaction.options.getNumber('amount');
+
+    const mopEmbed = new EmbedBuilder()
+        .setColor(PASTEL_BLUE)
+        .setDescription(
+`_ _
+# _ _     mode of p**ay**ment <:butterfly:1554370425587245066>
+_ _
+total amount to pay: \` ₱${amount.toFixed(2)} \`
+please choose your preferred payment method below:
+_ _`
+        )
+        .setImage(BANNER_URL)
+        .setTimestamp();
+
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`mop_select_gcash_${amount}`).setLabel('GCash').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`mop_select_maya_${amount}`).setLabel('Maya').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`mop_select_seabank_${amount}`).setLabel('SeaBank').setStyle(ButtonStyle.Secondary)
+    );
+
+    await interaction.reply({ embeds: [mopEmbed], components: [row] });
 }
 
 async function handleMopButtons(interaction) {
     const customId = interaction.customId;
 
-    if (customId.startsWith('proceed_payment_')) {
-        const amount = parseFloat(customId.replace('proceed_payment_', ''));
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`mop_select_gcash_${amount}`).setLabel('gcash').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId(`mop_select_maya_${amount}`).setLabel('maya').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId(`mop_select_gotyme_${amount}`).setLabel('gotyme').setStyle(ButtonStyle.Secondary)
-        );
-
-        await interaction.reply({
-            content: `Select your preferred payment method (Amount: ₱${amount}):`,
-            components: [row],
-            flags: MessageFlags.Ephemeral
-        });
-        return;
-    }
-
     if (customId.startsWith('mop_select_')) {
-        const [, , type, amountStr] = customId.split('_');
+        const [, , method, amountStr] = customId.split('_');
         const amount = parseFloat(amountStr);
 
-        if (type === 'gcash') {
-            const modal = new ModalBuilder().setCustomId(`tip_modal_${amount}`).setTitle('Add a Tip?');
-            const tipInput = new TextInputBuilder().setCustomId('tip_amount').setLabel('Tip Amount in PHP (Enter 0 for no tip)').setStyle(TextInputStyle.Short).setValue('0').setRequired(true);
-            modal.addComponents(new ActionRowBuilder().addComponents(tipInput));
-            await interaction.showModal(modal);
-        } else if (type === 'maya') {
-            await renderMopEmbed(interaction, 'maya', amount, 10);
-        } else if (type === 'gotyme') {
-            await renderMopEmbed(interaction, 'gotyme', amount, 10);
-        }
-        return;
+        let accountNumber = '09123456789';
+        let accountName = 'Coastal Cart Official';
+
+        if (method === 'maya') accountNumber = '09987654321';
+        if (method === 'seabank') accountNumber = '123456789012';
+
+        const paymentEmbed = new EmbedBuilder()
+            .setColor(PASTEL_BLUE)
+            .setDescription(
+`_ _
+# _ _     payment details (${method.toUpperCase()})
+_ _
+> **Account Name:** \`${accountName}\`
+> **Account Number:** \`${accountNumber}\`
+> **Amount:** \` ₱${amount.toFixed(2)} \`
+_ _
+-# please send your payment and drop the receipt here with a mention of the bot!
+_ _`
+            )
+            .setTimestamp();
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`copy_${accountNumber}`).setLabel('Copy Account Number').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`tip_modal_trigger_${amount}`).setLabel('Add Tip').setStyle(ButtonStyle.Success)
+        );
+
+        return await interaction.reply({ embeds: [paymentEmbed], components: [row], flags: MessageFlags.Ephemeral });
     }
 
-    if (customId === 'copy_maya_num') {
-        return await interaction.reply({ content: '`09184552148`', flags: MessageFlags.Ephemeral });
+    if (customId.startsWith('copy_')) {
+        const accNum = customId.replace('copy_', '');
+        return await interaction.reply({ content: `Copied account number: \`${accNum}\``, flags: MessageFlags.Ephemeral });
     }
-    if (customId === 'copy_gotyme_num') {
-        return await interaction.reply({ content: '`016381151370`', flags: MessageFlags.Ephemeral });
+
+    if (customId.startsWith('tip_modal_trigger_')) {
+        const amount = customId.replace('tip_modal_trigger_', '');
+        const modal = new ModalBuilder().setCustomId(`tip_modal_${amount}`).setTitle('Add Tip Amount');
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('tip_amount').setLabel('Tip Amount (₱):').setStyle(TextInputStyle.Short).setRequired(true))
+        );
+        return await interaction.showModal(modal);
     }
 }
 
 async function handleMopModals(interaction) {
     if (interaction.customId.startsWith('tip_modal_')) {
-        const amount = parseFloat(interaction.customId.replace('tip_modal_', ''));
-        const tipVal = parseFloat(interaction.fields.getTextInputValue('tip_amount')) || 0;
-        await renderMopEmbed(interaction, 'gcash', amount, tipVal);
+        const baseAmount = parseFloat(interaction.customId.replace('tip_modal_', ''));
+        const tipInput = parseFloat(interaction.fields.getTextInputValue('tip_amount')) || 0;
+        const total = baseAmount + tipInput;
+
+        return await interaction.reply({ content: `✅ Tip added successfully! New total amount to pay: \` ₱${total.toFixed(2)} \``, flags: MessageFlags.Ephemeral });
     }
 }
 
-async function renderMopEmbed(interaction, mopType, amount, feeOrTip = 0) {
-    let descriptionText = '';
-    let componentsRow = null;
-    let imageUrl = null;
-
-    if (mopType === 'gcash') {
-        descriptionText = 
-`_ _
-# _ _     𝓖ca**s**h   (  001  )    
-~~                                                                        ~~
-          \`    0918  455  2148   \`
-~~                                                                        ~~
--# _ _                **Tag bubbles when sending receipts!**`;
-        imageUrl = GCASH_QR_URL;
-    } else if (mopType === 'maya') {
-        descriptionText = 
-`_ _
-# _ _     𝓜a**y**a   (  002  )    
-~~                                                                        ~~
-          \`    0918  455  2148   \`
-~~                                                                        ~~
--# _ _                **𝓒opy the number below!**`;
-
-        componentsRow = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('copy_maya_num').setLabel('copy maya account number').setStyle(ButtonStyle.Secondary)
-        );
-    } else if (mopType === 'gotyme') {
-        descriptionText = 
-`_ _
-# _ _     Glory**m**e   (  003  )    
-~~                                                                        ~~
-          \`    0163 8115 1370   \`
-~~                                                                        ~~
--# _ _                **𝓒opy the number below!**`;
-
-        componentsRow = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('copy_gotyme_num').setLabel('copy gotyme account number').setStyle(ButtonStyle.Secondary)
-        );
-    }
-
-    const embed = new EmbedBuilder()
-        .setColor(PASTEL_BLUE)
-        .setDescription(descriptionText);
-
-    if (imageUrl) embed.setImage(imageUrl);
-
-    const messageData = { embeds: [embed], components: componentsRow ? [componentsRow] : [] };
-
-    if (interaction.isModalSubmit()) {
-        await interaction.reply(messageData);
-    } else if (interaction.isButton()) {
-        await interaction.reply(messageData);
-    }
-}
-
-// ==========================================
-// BOT LOGIN INITIALIZATION
-// ==========================================
-console.log('[Discord Gateway] Connecting client...');
-client.login(process.env.DISCORD_TOKEN).catch(err => {
-    console.error('[Discord Gateway Connection Error]', err);
-});
+client.login(process.env.DISCORD_TOKEN);
