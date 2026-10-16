@@ -478,19 +478,19 @@ _ _
 -# _ _          use buttons ɑccordingly ɑnd correctly
     `;
 
-    // 2. Button Action Row
+    // 2. Button Action Row (creates the button container box right under the text)
     const buttonRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('btn_order').setLabel('order').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('btn_report').setLabel('report').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('btn_others').setLabel('other').setStyle(ButtonStyle.Secondary)
     );
 
-    // 3. GIF Embed
+    // 3. GIF Embed (sent as a separate card container below)
     const gifEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
         .setImage('https://cdn.discordapp.com/attachments/1560207522521022494/1560703160811651254/tumblr_nabwdbnlD01qg67clo1_500_gif_500200.gif?ex=6ad3ad96&is=6ad25c16&hm=a4d79aa4ff23e9381c132e6458f009118ceb839a1b476fb166116c0734526542');
 
-    // Send Message 1: Text + Buttons right underneath it
+    // Send Message 1: Text + Buttons container right underneath it
     await interaction.channel.send({
         content: textContent,
         components: [buttonRow]
