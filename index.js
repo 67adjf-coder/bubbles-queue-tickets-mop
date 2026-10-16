@@ -251,9 +251,8 @@ _ _
 -# _ _     <:flower:1560691740456001659>     ** 𑂘__oft__  𝒲hιspᧉrs **  **. . .**   \` ₍ᐢ..ᐢ₎⁺ \`
 ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
 -# _ _         cɑtᧉrᧉd wιth ℓovᧉ, <@${staffId}> <:zz_blueheart3:1555584821529546752> 
-
 -# _ _          <:glow_dots:1560696020852019310> <@${buyerId}>  ɑt  <#${ticketChannelId}>
--# _ _          <:glow_dots:1560696020852019310> \` # \` ${qty}     ~~         ~~   ${item}
+-# _ _          <:glow_dots:1560696020852019310> \` #${qty} \` (qty)     ~~         ~~   ${item}
 -# _ _          <:glow_dots:1560696020852019310>  ${info}     <:hart:1555857231814328331>    ₱\` ${price} \` vιɑ ( ${payment} )
 
 -# _ _                     your ιtᧉm ιs:  **${statusText}**
@@ -298,11 +297,11 @@ async function handleQueueCommand(interaction) {
         .setColor(PASTEL_BLUE)
         .setDescription(`
 _ _
--# \\`    order  tracker \ ` ~~                                               ~~
+-# \\    order  tracker  \` ~~                                               ~~
 -# _ _  **nb & dekors**     \` \`    mto 
--# _ _  **gɑme topups**    \` \`    mins-hrs 
--# _ _  **roblx bobɑks**    \` \`    mins-days 
-~~                                               ~~ trɑck your order(s) [here](https://discord.com/channels/${interaction.guildId}/${QUEUE_CHANNEL_ID}) ! 𓆉 no rushing! pls, be patient. ~~                                               ~~ _ _
+-# _ _  **game topups**    \` \`    mins-hrs 
+-# _ _  **roblx bobaks**    \` \`    mins-days 
+~~                                               ~~ track your order [here](https://discord.com/channels/${interaction.guildId}/${QUEUE_CHANNEL_ID}) ! 𓆉 no rushing! pls, be patient. ~~                                               ~~ _ _
         `)
         .setTimestamp();
 
@@ -323,35 +322,37 @@ _ _
         'in-quᧉuᧉ'
     );
 
-    const selectMenu = new StringSelectMenuBuilder()
-        .setCustomId(`queue_menu_${ticketChannelId}`)
-        .setPlaceholder('select queue status...')
-        .addOptions([
-            {
-                label: 'noted',
-                description: 'Set status to noted by ownie',
-                value: 'noted',
-                emoji: '🐚'
-            },
-            {
-                label: 'processing',
-                description: 'Set status to now processing',
-                value: 'proc',
-                emoji: '🫧'
-            },
-            {
-                label: 'completed',
-                description: 'Set status to done & delivered',
-                value: 'comp',
-                emoji: '🐋'
-            }
-        ]);
-
-    const row = new ActionRowBuilder().addComponents(selectMenu);
-
     const queueChannel = await client.channels.fetch(QUEUE_CHANNEL_ID).catch(() => null);
     if (queueChannel) {
-        await queueChannel.send({ embeds: [queueEmbed], components: [row] });
+        // Send queue tracker using Components V2 Container holding the select menu
+        await queueChannel.send({
+            embeds: [queueEmbed],
+            flags: 32768, // IS_COMPONENTS_V2 flag
+            components: [
+                {
+                    type: 17, // Container component
+                    accent_color: PASTEL_BLUE,
+                    components: [
+                        {
+                            type: 1, // Action Row inside the container
+                            components: [
+                                {
+                                    type: 3, // String Select Menu
+                                    custom_id: `queue_menu_${ticketChannelId}`,
+                                    placeholder: 'select queue status...',
+                                    disabled: false,
+                                    options: [
+                                        { label: 'noted', description: 'Set status to noted by ownie', value: 'noted', emoji: { name: '🐚' } },
+                                        { label: 'processing', description: 'Set status to now processing', value: 'proc', emoji: { name: '🫧' } },
+                                        { label: 'completed', description: 'Set status to done & delivered', value: 'comp', emoji: { name: '🐋' } }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        });
     }
 }
 
@@ -403,7 +404,37 @@ async function handleQueueMenu(interaction) {
         statusLabel
     );
 
-    await interaction.update({ embeds: [updatedEmbed], components: interaction.message.components });
+    // Check if completed is selected to disable the menu container
+    const isCompleted = (action === 'comp');
+
+    await interaction.update({
+        embeds: [updatedEmbed],
+        flags: 32768,
+        components: [
+            {
+                type: 17,
+                accent_color: PASTEL_BLUE,
+                components: [
+                    {
+                        type: 1,
+                        components: [
+                            {
+                                type: 3,
+                                custom_id: `queue_menu_${ticketChannelId}`,
+                                placeholder: isCompleted ? 'status: completed & delivered 🐋' : 'select queue status...',
+                                disabled: isCompleted,
+                                options: [
+                                    { label: 'noted', description: 'Set status to noted by ownie', value: 'noted', emoji: { name: '🐚' } },
+                                    { label: 'processing', description: 'Set status to now processing', value: 'proc', emoji: { name: '🫧' } },
+                                    { label: 'completed', description: 'Set status to done & delivered', value: 'comp', emoji: { name: '🐋' } }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    });
 
     try {
         const ticketChannel = await client.channels.fetch(ticketChannelId).catch(() => null);
@@ -466,7 +497,7 @@ _ _
 async function handleTicketSetupCommand(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    // 1. Top Text Embed
+    // 1. Text Header Embed
     const textEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
         .setDescription(`
@@ -486,10 +517,10 @@ _ _
         .setColor(PASTEL_BLUE)
         .setImage('https://cdn.discordapp.com/attachments/1560207522521022494/1560703160811651254/tumblr_nabwdbnlD01qg67clo1_500_gif_500200.gif?ex=6ad3ad96&is=6ad25c16&hm=a4d79aa4ff23e9381c132e6458f009118ceb839a1b476fb166116c0734526542');
 
-    // Send Message 1: Text Header
+    // Send Message 1: Text Header Embed
     await interaction.channel.send({ embeds: [textEmbed] });
 
-    // Send Message 2: Container Box (type: 17) holding the action row buttons INSIDE the container
+    // Send Message 2: Components V2 Container Box holding the buttons inside
     await interaction.channel.send({
         flags: 32768, // IS_COMPONENTS_V2 flag
         components: [
@@ -530,6 +561,42 @@ _ _
 
     await interaction.editReply({ content: 'Ticket setup panel sent!' });
 }
+
+async function handleTicketButtons(interaction) {
+    const customId = interaction.customId;
+
+    if (['btn_order', 'btn_report', 'btn_others'].includes(customId)) {
+        if (interaction.member && interaction.member.roles.cache.has(RESTRICTED_TICKET_ROLE_ID)) {
+            return await interaction.reply({
+                content: `You cannot open a ticket right now. You must vouch your previous item(s) in [vouch-items](${VOUCH_URL}) to regain access to create a ticket!`,
+                flags: MessageFlags.Ephemeral
+            });
+        }
+    }
+
+    if (customId === 'btn_order') {
+        const orderEmbed = new EmbedBuilder()
+            .setColor(PASTEL_BLUE)
+            .setDescription(
+`_ _
+             <a:spiral:1555857356082909315>  **order**  __αwαy__  ! 
+> click  on  the button on the item  
+> you wish to purchαse from here.
+-# **note**: this is αn αuto buy system. once u
+-# click the button, it will notify the stαffs!
+_ _`
+            )
+            .setImage(BANNER_URL);
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('btn_bobaks').setLabel('bobaks').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('btn_topups').setLabel('topups').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('btn_dc_items').setLabel('dc items').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('btn_premiums').setLabel('premiums').setStyle(ButtonStyle.Secondary)
+        );
+
+        return await interaction.reply({ embeds: [orderEmbed], components: [row], flags: MessageFlags.Ephemeral });
+    }
 
     if (customId === 'btn_report') {
         const reportEmbed = new EmbedBuilder()
