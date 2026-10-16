@@ -44,6 +44,7 @@ const RESTRICTED_TICKET_ROLE_ID = '1557329338943283240'; // No-Vouch Role ID
 const QUEUE_CHANNEL_ID = '1539239066049060974';
 const TRANSCRIPT_CHANNEL_ID = '1507278726998524046';
 const VOUCH_URL = 'https://discord.com/channels/1507214174084927498/1507271897962778706';
+const LINEUP_URL = 'https://discord.com/channels/1507214174084927498/1539239066049060974';
 const BANNER_URL = 'https://cdn.discordapp.com/attachments/1553697060056866906/1554405328462938162/Coral_Reef_Sea_GIF_-_Coral_Reef_Sea_Ocean_-_Discover__Share_GIFs.gif?ex=6abf6745&is=6abe15c5&hm=7248fb3fe9a07a4857b393db5d6a767808fb7d12d910cd4e1bcd95281abb5a18';
 const PASTEL_BLUE = 0xAEC6CF;
 
@@ -251,7 +252,6 @@ _ _
 -# _ _     <:flower:1560691740456001659>     ** 𑂘__oft__  𝒲hιspᧉrs **  **. . .**   \` ₍ᐢ..ᐢ₎⁺ \`
 ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
 -# _ _         cɑtᧉrᧉd wιth ℓovᧉ, <@${staffId}> <:zz_blueheart3:1555584821529546752> 
-
 -# _ _          <:glow_dots:1560696020852019310> <@${buyerId}>  ɑt  <#${ticketChannelId}>
 -# _ _          <:glow_dots:1560696020852019310> \` # \` ${qty}     ~~         ~~   ${item}
 -# _ _          <:glow_dots:1560696020852019310>  ${info}     <:hart:1555857231814328331>    ₱\` ${price} \` vιɑ ( ${payment} )
@@ -309,7 +309,12 @@ _ _
         `)
         .setTimestamp();
 
-    await interaction.channel.send({ embeds: [localEmbed] });
+    // Link button to view the order lineup channel
+    const lineupButtonRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setLabel('view order lineup').setStyle(ButtonStyle.Link).setURL(LINEUP_URL)
+    );
+
+    await interaction.channel.send({ embeds: [localEmbed], components: [lineupButtonRow] });
     await interaction.editReply({ content: 'Queue logged successfully!' });
 
     const queueEmbed = buildQueueEmbed(
@@ -326,21 +331,20 @@ _ _
         'in-quᧉuᧉ'
     );
 
+    const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId(`queue_menu_${ticketChannelId}`)
+        .setPlaceholder('select queue status...')
+        .addOptions([
+            { label: 'noted', description: 'Set status to noted by ownie', value: 'noted', emoji: '🐚' },
+            { label: 'processing', description: 'Set status to now processing', value: 'proc', emoji: '🫧' },
+            { label: 'completed', description: 'Set status to done & delivered', value: 'comp', emoji: '🐋' }
+        ]);
+
+    const row = new ActionRowBuilder().addComponents(selectMenu);
+
     const queueChannel = await client.channels.fetch(QUEUE_CHANNEL_ID).catch(() => null);
     if (queueChannel) {
-        await queueChannel.send({ embeds: [queueEmbed] });
-
-        const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId(`queue_menu_${ticketChannelId}`)
-            .setPlaceholder('select queue status...')
-            .addOptions([
-                { label: 'noted', description: 'Set status to noted by ownie', value: 'noted', emoji: '🐚' },
-                { label: 'processing', description: 'Set status to now processing', value: 'proc', emoji: '🫧' },
-                { label: 'completed', description: 'Set status to done & delivered', value: 'comp', emoji: '🐋' }
-            ]);
-
-        const row = new ActionRowBuilder().addComponents(selectMenu);
-        await queueChannel.send({ components: [row] });
+        await queueChannel.send({ embeds: [queueEmbed], components: [row] });
     }
 }
 
@@ -399,17 +403,8 @@ async function handleQueueMenu(interaction) {
         ]);
 
     const row = new ActionRowBuilder().addComponents(selectMenu);
-    await interaction.update({ components: [row] });
 
-    try {
-        const messages = await interaction.channel.messages.fetch({ limit: 5 });
-        const targetMsg = messages.find(m => m.embeds.length > 0 && m.embeds[0].description?.includes(ticketChannelId));
-        if (targetMsg) {
-            await targetMsg.edit({ embeds: [updatedEmbed] });
-        }
-    } catch (err) {
-        console.error('Could not update queue embed:', err.message || err);
-    }
+    await interaction.update({ embeds: [updatedEmbed], components: [row] });
 
     try {
         const ticketChannel = await client.channels.fetch(ticketChannelId).catch(() => null);
