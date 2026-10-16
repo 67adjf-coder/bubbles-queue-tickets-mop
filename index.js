@@ -497,10 +497,8 @@ _ _
 async function handleTicketSetupCommand(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    // 1. Text Header Embed
-    const textEmbed = new EmbedBuilder()
-        .setColor(PASTEL_BLUE)
-        .setDescription(`
+    // 1. Standalone Plain Text Content (No embed box)
+    const plainTextContent = `
 _ _
          𓈒   ୭ৎ         tιckᧉttᧉ     :    boothᧉ     ⛲ᨯ    
 -# _ _                    **reɑd notes before creɑting ɑ tix**
@@ -510,26 +508,27 @@ _ _
 -# _ _          iɑ tickette for 4 hours = closed + wɑrn
 -# _ _          **do not** troll just to try d buttons = ban
 -# _ _          use buttons ɑccordingly ɑnd correctly
-        `);
+    `;
 
-    // 2. GIF Embed
+    // 2. GIF Embed Container
     const gifEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
         .setImage('https://cdn.discordapp.com/attachments/1560207522521022494/1560703160811651254/tumblr_nabwdbnlD01qg67clo1_500_gif_500200.gif?ex=6ad3ad96&is=6ad25c16&hm=a4d79aa4ff23e9381c132e6458f009118ceb839a1b476fb166116c0734526542');
 
-    // Send Message 1: Text Header Embed
-    await interaction.channel.send({ embeds: [textEmbed] });
-
-    // Send Message 2: Components V2 Container Box holding the buttons inside
+    // Send Message 1: Text Header + Container with Separator Line and Buttons (No accent_color)
     await interaction.channel.send({
+        content: plainTextContent,
         flags: 32768, // IS_COMPONENTS_V2 flag
         components: [
             {
-                type: 17, // Container component
-                accent_color: PASTEL_BLUE,
+                type: 17, // Container component (no accent_color removes the blue bar)
                 components: [
                     {
-                        type: 1, // Action Row inside the container
+                        type: 14, // Separator / Horizontal Divider line component
+                        divider: true
+                    },
+                    {
+                        type: 1, // Action Row inside container
                         components: [
                             {
                                 type: 2,
@@ -556,7 +555,7 @@ _ _
         ]
     });
 
-    // Send Message 3: Bottom GIF Embed
+    // Send Message 2: Bottom GIF Embed
     await interaction.channel.send({ embeds: [gifEmbed] });
 
     await interaction.editReply({ content: 'Ticket setup panel sent!' });
