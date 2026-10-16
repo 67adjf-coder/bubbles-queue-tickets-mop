@@ -465,10 +465,8 @@ _ _
 async function handleTicketSetupCommand(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    // 1. Text Message Panel (Top Container)
-    const textEmbed = new EmbedBuilder()
-        .setColor(PASTEL_BLUE)
-        .setDescription(`
+    // 1. Standalone Plain Text Header (Top text outside embeds)
+    const textContent = `
 _ _
          𓈒   ୭ৎ         tιckᧉttᧉ     :    boothᧉ     ⛲ᨯ    
 -# _ _                    **reɑd notes before creɑting ɑ tix**
@@ -478,23 +476,24 @@ _ _
 -# _ _          iɑ tickette for 4 hours = closed + wɑrn
 -# _ _          **do not** troll just to try d buttons = ban
 -# _ _          use buttons ɑccordingly ɑnd correctly
-        `)
-        .setTimestamp();
+    `;
 
-    // 2. Middle Container (Button Action Row)
+    // 2. Middle Container (Interactive Buttons Row)
     const buttonRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('btn_order').setLabel('order').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('btn_report').setLabel('report').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('btn_others').setLabel('other').setStyle(ButtonStyle.Secondary)
     );
 
-    // 3. Bottom Separator GIF Embed
+    // 3. Bottom Embed Container (GIF Divider Panel)
     const gifEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
         .setImage('https://cdn.discordapp.com/attachments/1560207522521022494/1560703160811651254/tumblr_nabwdbnlD01qg67clo1_500_gif_500200.gif?ex=6ad3ad96&is=6ad25c16&hm=a4d79aa4ff23e9381c132e6458f009118ceb839a1b476fb166116c0734526542');
 
+    // Send standalone text, button row container, and bottom GIF embed
     await interaction.channel.send({
-        embeds: [textEmbed, gifEmbed],
+        content: textContent,
+        embeds: [gifEmbed],
         components: [buttonRow]
     });
 
