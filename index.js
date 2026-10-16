@@ -497,7 +497,7 @@ _ _
 async function handleTicketSetupCommand(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    // 1. Standalone Plain Text Content (No embed box)
+    // 1. Plain Text Instruction Content
     const plainTextContent = `
 _ _
          𓈒   ୭ৎ         tιckᧉttᧉ     :    boothᧉ     ⛲ᨯ    
@@ -510,21 +510,25 @@ _ _
 -# _ _          use buttons ɑccordingly ɑnd correctly
     `;
 
-    // 2. GIF Embed Container
+    // 2. Bottom GIF Embed
     const gifEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
         .setImage('https://cdn.discordapp.com/attachments/1560207522521022494/1560703160811651254/tumblr_nabwdbnlD01qg67clo1_500_gif_500200.gif?ex=6ad3ad96&is=6ad25c16&hm=a4d79aa4ff23e9381c132e6458f009118ceb839a1b476fb166116c0734526542');
 
-    // Send Message 1: Text Header + Container with Separator Line and Buttons (No accent_color)
+    // Message 1: Send Standalone Plain Text (Legacy fields work fine here)
     await interaction.channel.send({
-        content: plainTextContent,
+        content: plainTextContent
+    });
+
+    // Message 2: Components V2 Container Box holding Separator + Buttons (No top-level 'content' field)
+    await interaction.channel.send({
         flags: 32768, // IS_COMPONENTS_V2 flag
         components: [
             {
-                type: 17, // Container component (no accent_color removes the blue bar)
+                type: 17, // Container component (no accent_color removes the blue side bar)
                 components: [
                     {
-                        type: 14, // Separator / Horizontal Divider line component
+                        type: 14, // Separator line component
                         divider: true
                     },
                     {
@@ -555,7 +559,7 @@ _ _
         ]
     });
 
-    // Send Message 2: Bottom GIF Embed
+    // Message 3: Send Bottom GIF Embed
     await interaction.channel.send({ embeds: [gifEmbed] });
 
     await interaction.editReply({ content: 'Ticket setup panel sent!' });
