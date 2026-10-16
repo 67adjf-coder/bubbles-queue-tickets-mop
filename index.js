@@ -297,11 +297,11 @@ async function handleQueueCommand(interaction) {
         .setColor(PASTEL_BLUE)
         .setDescription(`
 _ _
--# \\    order  tracker  \` ~~                                               ~~
+-# \\`    order  tracker \ ` ~~                                               ~~
 -# _ _  **nb & dekors**     \` \`    mto 
--# _ _  **game topups**    \` \`    mins-hrs 
--# _ _  **roblx bobaks**    \` \`    mins-days 
-~~                                               ~~ track your order [here](https://discord.com/channels/${interaction.guildId}/${QUEUE_CHANNEL_ID}) ! 𓆉 no rushing! pls, be patient. ~~                                               ~~ _ _
+-# _ _  **gɑme topups**    \` \`    mins-hrs 
+-# _ _  **roblx bobɑks**    \` \`    mins-days 
+~~                                               ~~ trɑck your order(s) [here](https://discord.com/channels/${interaction.guildId}/${QUEUE_CHANNEL_ID}) ! 𓆉 no rushing! pls, be patient. ~~                                               ~~ _ _
         `)
         .setTimestamp();
 
@@ -465,8 +465,10 @@ _ _
 async function handleTicketSetupCommand(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    // 1. Standalone text message content
-    const textContent = `
+    // 1. Top Text Embed
+    const textEmbed = new EmbedBuilder()
+        .setColor(PASTEL_BLUE)
+        .setDescription(`
 _ _
          𓈒   ୭ৎ         tιckᧉttᧉ     :    boothᧉ     ⛲ᨯ    
 -# _ _                    **reɑd notes before creɑting ɑ tix**
@@ -476,69 +478,57 @@ _ _
 -# _ _          iɑ tickette for 4 hours = closed + wɑrn
 -# _ _          **do not** troll just to try d buttons = ban
 -# _ _          use buttons ɑccordingly ɑnd correctly
-    `;
+        `);
 
-    // 2. Button Action Row (creates the button container box right under the text)
-    const buttonRow = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('btn_order').setLabel('order').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('btn_report').setLabel('report').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('btn_others').setLabel('other').setStyle(ButtonStyle.Secondary)
-    );
-
-    // 3. GIF Embed (sent as a separate card container below)
+    // 2. GIF Embed
     const gifEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
         .setImage('https://cdn.discordapp.com/attachments/1560207522521022494/1560703160811651254/tumblr_nabwdbnlD01qg67clo1_500_gif_500200.gif?ex=6ad3ad96&is=6ad25c16&hm=a4d79aa4ff23e9381c132e6458f009118ceb839a1b476fb166116c0734526542');
 
-    // Send Message 1: Text + Buttons container right underneath it
+    // Send Message 1: Text Header
+    await interaction.channel.send({ embeds: [textEmbed] });
+
+    // Send Message 2: Container Box (type: 17) holding the action row buttons INSIDE the container
     await interaction.channel.send({
-        content: textContent,
-        components: [buttonRow]
+        flags: 32768, // IS_COMPONENTS_V2 flag
+        components: [
+            {
+                type: 17, // Container component
+                accent_color: PASTEL_BLUE,
+                components: [
+                    {
+                        type: 1, // Action Row inside the container
+                        components: [
+                            {
+                                type: 2,
+                                style: 2, // Secondary / Gray Button
+                                custom_id: 'btn_order',
+                                label: 'order'
+                            },
+                            {
+                                type: 2,
+                                style: 2,
+                                custom_id: 'btn_report',
+                                label: 'report'
+                            },
+                            {
+                                type: 2,
+                                style: 2,
+                                custom_id: 'btn_others',
+                                label: 'other'
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
     });
 
-    // Send Message 2: GIF embed underneath Message 1
-    await interaction.channel.send({
-        embeds: [gifEmbed]
-    });
+    // Send Message 3: Bottom GIF Embed
+    await interaction.channel.send({ embeds: [gifEmbed] });
 
     await interaction.editReply({ content: 'Ticket setup panel sent!' });
 }
-
-async function handleTicketButtons(interaction) {
-    const customId = interaction.customId;
-
-    if (['btn_order', 'btn_report', 'btn_others'].includes(customId)) {
-        if (interaction.member && interaction.member.roles.cache.has(RESTRICTED_TICKET_ROLE_ID)) {
-            return await interaction.reply({
-                content: `You cannot open a ticket right now. You must vouch your previous item(s) in [vouch-items](${VOUCH_URL}) to regain access to create a ticket!`,
-                flags: MessageFlags.Ephemeral
-            });
-        }
-    }
-
-    if (customId === 'btn_order') {
-        const orderEmbed = new EmbedBuilder()
-            .setColor(PASTEL_BLUE)
-            .setDescription(
-`_ _
-             <a:spiral:1555857356082909315>  **order**  __αwαy__  ! 
-> click  on  the button on the item  
-> you wish to purchαse from here.
--# **note**: this is αn αuto buy system. once u
--# click the button, it will notify the stαffs!
-_ _`
-            )
-            .setImage(BANNER_URL);
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('btn_bobaks').setLabel('bobaks').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('btn_topups').setLabel('topups').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('btn_dc_items').setLabel('dc items').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('btn_premiums').setLabel('premiums').setStyle(ButtonStyle.Secondary)
-        );
-
-        return await interaction.reply({ embeds: [orderEmbed], components: [row], flags: MessageFlags.Ephemeral });
-    }
 
     if (customId === 'btn_report') {
         const reportEmbed = new EmbedBuilder()
