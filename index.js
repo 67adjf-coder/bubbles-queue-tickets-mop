@@ -252,7 +252,6 @@ _ _
 -# _ _     <:flower:1560691740456001659>     ** 𑂘__oft__  𝒲hιspᧉrs **  **. . .**   \` ₍ᐢ..ᐢ₎⁺ \`
 ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
 -# _ _         cɑtᧉrᧉd wιth ℓovᧉ, <@${staffId}> <:zz_blueheart3:1555584821529546752> 
-
 -# _ _          <:glow_dots:1560696020852019310> <@${buyerId}>  ɑt  <#${ticketChannelId}>
 -# _ _          <:glow_dots:1560696020852019310> \` # \` ${qty}     ~~         ~~   ${item}
 -# _ _          <:glow_dots:1560696020852019310>  ${info}     <:hart:1555857231814328331>    ₱\` ${price} \` vιɑ ( ${payment} )
@@ -310,7 +309,6 @@ _ _
         `)
         .setTimestamp();
 
-    // Link button to view the order lineup channel
     const lineupButtonRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setLabel('view order lineup').setStyle(ButtonStyle.Link).setURL(LINEUP_URL)
     );
@@ -746,6 +744,7 @@ async function handleTicketModals(interaction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const closeReason = interaction.fields.getTextInputValue('close_reason');
         const channel = interaction.channel;
+        const ticketData = ticketStore.get(channel.id) || {};
 
         try {
             const transcript = await discordTranscripts.createTranscript(channel, {
@@ -756,6 +755,13 @@ async function handleTicketModals(interaction) {
                 poweredBy: false
             });
 
+            // Fetch opener and claimed staff info
+            const openerId = ticketData.ownerId;
+            const claimedStaffId = ticketData.claimedByStaffId;
+            const openerUser = openerId ? await client.users.fetch(openerId).catch(() => null) : null;
+            const claimedStaffText = claimedStaffId ? `<@${claimedStaffId}>` : '⚠️ *Unclaimed / Not recorded*';
+
+            // 1. Send Transcript & Log to Transcript Channel
             const transcriptChannel = await client.channels.fetch(TRANSCRIPT_CHANNEL_ID).catch(() => null);
             if (transcriptChannel) {
                 const closeEmbed = new EmbedBuilder()
@@ -764,14 +770,38 @@ async function handleTicketModals(interaction) {
                     .addFields(
                         { name: 'Ticket Name', value: `#${channel.name}`, inline: true },
                         { name: 'Closed By', value: `${interaction.user}`, inline: true },
+                        { name: 'Claimed By', value: claimedStaffText, inline: true },
+                        { name: 'Ticket Opener', value: openerUser ? `${openerUser}` : 'Unknown', inline: true },
                         { name: 'Reason', value: closeReason, inline: false }
                     )
                     .setTimestamp();
 
                 await transcriptChannel.send({ embeds: [closeEmbed], files: [transcript] });
             }
+
+            // 2. DM the Ticket Opener with their Transcript
+            if (openerUser) {
+                const dmEmbed = new EmbedBuilder()
+                    .setColor(PASTEL_BLUE)
+                    .setTitle('📄 Your Ticket Transcript')
+                    .setDescription(`Your ticket **#${channel.name}`} in **${interaction.guild.name}** has been closed.\n\n**Reason:** ${closeReason}\n**Claimed By:** ${claimedStaffText}`)
+                    .setTimestamp();
+
+                const transcriptForDm = await discordTranscripts.createTranscript(channel, {
+                    limit: -1,
+                    returnType: 'attachment',
+                    filename: `transcript-${channel.name}.html`,
+                    saveImages: true,
+                    poweredBy: false
+                });
+
+                await openerUser.send({ embeds: [dmEmbed], files: [transcriptForDm] }).catch(() => {
+                    console.log(`Could not DM transcript to user ${openerUser.tag}`);
+                });
+            }
+
         } catch (err) {
-            console.error('Failed to generate transcript:', err);
+            console.error('Failed to generate or send transcript:', err);
         }
 
         await interaction.editReply({ content: 'Closing ticket and generating transcript...' });
@@ -804,7 +834,7 @@ async function handleTicketModals(interaction) {
         ]
     });
 
-    const fieldsData = interaction.fields.fields.map(f => `> **${f.customId.replace(/_/g, ' ')}:**${f.value}`).join('\n');
+    const fieldsData = interaction.fields.fields.map(f => `> **${f.customId.replace(/_/g, ' ')}:** ${f.value}`).join('\n');
 
     const welcomeEmbed = new EmbedBuilder()
         .setColor(PASTEL_BLUE)
@@ -872,26 +902,46 @@ async function handleMopButtons(interaction) {
         const [, , method, amountStr] = customId.split('_');
         const amount = parseFloat(amountStr);
 
-        let accountNumber = '0918 455 2148';
-        let accountName = 'R.S. Initials';
+        let paymentCardText = '';
 
-        if (method === 'maya') accountNumber = '0918 455 2148';
-        if (method === 'gotyme') accountNumber = '0163 811 51370';
+        if (method === 'gcash') {
+            paymentCardText = `
+_ _
+         <:flower:1560691740456001659>   \` gcɑsh pɑymᧉnt \`   ⸝⸝\` ๑꒱
+                ** 0918 455 2148 ** <:glow_dots:1560696020852019310>  || __R.S.__ ||
+-# ~~         ~~     send proof of pɑyment ( __*screenshot*__ )
+-# ~~         ~~     ping <@1539222187846799520> ɑttɑched with the ss !
+_ _
+> **Amount to Pay:** \` ₱${amount.toFixed(2)} \`
+            `;
+        } else if (method === 'maya') {
+            paymentCardText = `
+_ _
+         <:flower:1560691740456001659>   \` p-mɑyɑ pɑymᧉnt \`   ⸝⸝\` ๑꒱
+                ** 0918 455 2148 ** <:glow_dots:1560696020852019310>  || __J.S.__ ||
+-# ~~         ~~     send proof of pɑyment ( __*screenshot*__ )
+-# ~~         ~~     ping <@1539222187846799520> ɑttɑched with the ss !
+_ _
+> **Amount to Pay:** \` ₱${amount.toFixed(2)} \`
+            `;
+        } else if (method === 'gotyme') {
+            paymentCardText = `
+_ _
+         <:flower:1560691740456001659>   \` gotyme pɑymᧉnt \`   ⸝⸝\` ๑꒱
+                ** 0163 811 51370 ** <:glow_dots:1560696020852019310>  || __J.S.__ ||
+-# ~~         ~~     send proof of pɑyment ( __*screenshot*__ )
+-# ~~         ~~     ping <@1539222187846799520> ɑttɑched with the ss !
+_ _
+> **Amount to Pay:** \` ₱${amount.toFixed(2)} \`
+            `;
+        }
 
         const paymentEmbed = new EmbedBuilder()
             .setColor(PASTEL_BLUE)
-            .setDescription(
-`_ _
-# _ _     payment details (${method.toUpperCase()})
-_ _
-> **Account Name:** \`${accountName}\`
-> **Account Number:** \`${accountNumber}\`
-> **Amount:** \` ₱${amount.toFixed(2)} \`
-_ _
--# please send your payment and drop the receipt here with a mention of bubbles !
-_ _`
-            )
+            .setDescription(paymentCardText)
             .setTimestamp();
+
+        let accountNumber = method === 'gotyme' ? '016381151370' : '09184552148';
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`copy_${accountNumber}`).setLabel('Copy Account Number').setStyle(ButtonStyle.Secondary),
