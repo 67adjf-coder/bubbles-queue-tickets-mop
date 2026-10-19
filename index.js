@@ -859,7 +859,7 @@ _ _`
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`mop_select_gcash_${amount}`).setLabel('GCash').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId(`mop_select_maya_${amount}`).setLabel('Maya').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId(`mop_select_seabank_${amount}`).setLabel('SeaBank').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId(`mop_select_gotyme_${amount}`).setLabel('GoTyme').setStyle(ButtonStyle.Secondary)
     );
 
     await interaction.reply({ embeds: [mopEmbed], components: [row] });
@@ -872,11 +872,11 @@ async function handleMopButtons(interaction) {
         const [, , method, amountStr] = customId.split('_');
         const amount = parseFloat(amountStr);
 
-        let accountNumber = '09123456789';
-        let accountName = 'Coastal Cart Official';
+        let accountNumber = '0918 455 2148';
+        let accountName = 'R.S. Initials';
 
-        if (method === 'maya') accountNumber = '09987654321';
-        if (method === 'seabank') accountNumber = '123456789012';
+        if (method === 'maya') accountNumber = '0918 455 2148';
+        if (method === 'gotyme') accountNumber = '0163 811 51370';
 
         const paymentEmbed = new EmbedBuilder()
             .setColor(PASTEL_BLUE)
@@ -888,7 +888,7 @@ _ _
 > **Account Number:** \`${accountNumber}\`
 > **Amount:** \` ₱${amount.toFixed(2)} \`
 _ _
--# please send your payment and drop the receipt here with a mention of the bot!
+-# please send your payment and drop the receipt here with a mention of bubbles !
 _ _`
             )
             .setTimestamp();
