@@ -905,7 +905,7 @@ async function handleMopButtons(interaction) {
         let paymentCardText = '';
 
         if (method === 'gcash') {
-            paymentCardText = `
+            paymentCardText = 
 _ _
          <:flower:1560691740456001659>   \` gcɑsh pɑymᧉnt \`   ⸝⸝\` ๑꒱
                 ** 0918 455 2148 ** <:glow_dots:1560696020852019310>  || __R.S.__ ||
@@ -913,9 +913,9 @@ _ _
 -# ~~         ~~     ping <@1539222187846799520> ɑttɑched with the ss !
 _ _
 > **Amount to Pay:** \` ₱${amount.toFixed(2)} \`
-            `;
+            ;
         } else if (method === 'maya') {
-            paymentCardText = `
+            paymentCardText = 
 _ _
          <:flower:1560691740456001659>   \` p-mɑyɑ pɑymᧉnt \`   ⸝⸝\` ๑꒱
                 ** 0918 455 2148 ** <:glow_dots:1560696020852019310>  || __J.S.__ ||
@@ -923,9 +923,9 @@ _ _
 -# ~~         ~~     ping <@1539222187846799520> ɑttɑched with the ss !
 _ _
 > **Amount to Pay:** \` ₱${amount.toFixed(2)} \`
-            `;
+            ;
         } else if (method === 'gotyme') {
-            paymentCardText = `
+            paymentCardText = 
 _ _
          <:flower:1560691740456001659>   \` gotyme pɑymᧉnt \`   ⸝⸝\` ๑꒱
                 ** 0163 811 51370 ** <:glow_dots:1560696020852019310>  || __J.S.__ ||
@@ -933,7 +933,7 @@ _ _
 -# ~~         ~~     ping <@1539222187846799520> ɑttɑched with the ss !
 _ _
 > **Amount to Pay:** \` ₱${amount.toFixed(2)} \`
-            `;
+            ;
         }
 
         const paymentEmbed = new EmbedBuilder()
