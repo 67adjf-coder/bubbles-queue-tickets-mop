@@ -253,7 +253,7 @@ _ _
 ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
 -# _ _         cɑtᧉrᧉd wιth ℓovᧉ, <@${staffId}> <:zz_blueheart3:1555584821529546752> 
 -# _ _          <:glow_dots:1560696020852019310> <@${buyerId}>  ɑt  <#${ticketChannelId}>
--# _ _          <:glow_dots:1560696020852019310> \` # \` ${qty}     ~~         ~~   ${item}
+-# _ _          <:glow_dots:1560696020852019310> \` #${qty} \` (qty)     ~~         ~~   ${item}
 -# _ _          <:glow_dots:1560696020852019310>  ${info}     <:hart:1555857231814328331>    ₱\` ${price} \` vιɑ ( ${payment} )
 
 -# _ _                     your ιtᧉm ιs:  **${statusText}**
@@ -784,7 +784,7 @@ async function handleTicketModals(interaction) {
                 const dmEmbed = new EmbedBuilder()
                     .setColor(PASTEL_BLUE)
                     .setTitle('📄 Your Ticket Transcript')
-                    .setDescription(`Your ticket **#${channel.name}`} in **${interaction.guild.name}** has been closed.\n\n**Reason:** ${closeReason}\n**Claimed By:** ${claimedStaffText}`)
+                    .setDescription(`Your ticket **#${channel.name}** in **${interaction.guild.name}** has been closed.\n\n**Reason:** ${closeReason}\n**Claimed By:** ${claimedStaffText}`)
                     .setTimestamp();
 
                 const transcriptForDm = await discordTranscripts.createTranscript(channel, {
