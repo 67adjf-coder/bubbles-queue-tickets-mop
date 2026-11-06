@@ -752,7 +752,7 @@ async function handleMopCommand(interaction) {
        <:002_dns:1567870533285052498>   **sent by ɑbove** :
 -# _ _       tips  ɑre  ɑppreciɑted  *!*
 ⎯⎯⎯⎯⎯   <:flower:1560691740456001659>  ⎯⎯⎯⎯⎯
--# _ _ totɑl ɑmount to be pɑid:  ` ₱ (amnt) `
+-# _ _ totɑl ɑmount to be pɑid:  ` Ꭾ(amnt) `
 -# _ _ pleɑse choose ɑ pɑyment method
 _ _
 -# _ _ extrɑ  ɑmount  sent  ɑre  tips
