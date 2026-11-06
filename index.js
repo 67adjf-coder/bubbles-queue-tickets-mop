@@ -71,10 +71,11 @@ const commands = [
         .setName('queue-list')
         .setDescription('Create a new queue order tracker')
         .addUserOption(opt => opt.setName('buyer').setDescription('Buyer').setRequired(true))
+        .addStringOption(opt => opt.setName('qty').setDescription('Quantity').setRequired(true))
         .addStringOption(opt => opt.setName('item_name').setDescription('Item name').setRequired(true))
         .addStringOption(opt => opt.setName('item_info').setDescription('Item info').setRequired(true))
-        .addStringOption(opt => opt.setName('mop').setDescription('Mode of payment').setRequired(true))
-        .addStringOption(opt => opt.setName('amnt').setDescription('Amount').setRequired(true)),
+        .addStringOption(opt => opt.setName('amnt').setDescription('Amount').setRequired(true))
+        .addStringOption(opt => opt.setName('mop').setDescription('Mode of payment').setRequired(true)),
 
     new SlashCommandBuilder()
         .setName('ticket-setup')
@@ -239,19 +240,19 @@ client.on('messageCreate', async (message) => {
 // ==========================================
 // SECTION 1: QUEUE SYSTEM MODULE (/queue-list)
 // ==========================================
-function getQueueDescription(buyerTag, itemInfo, itemName, mopInfo, amount, staffUser, statusLine) {
+function getQueueDescription(buyerTag, qty, itemName, itemInfo, amnt, mop, staffUser, statusBlockquote) {
     return `_ _
-<:009:1568197445698064395> <:010:1568197472487088169>  ** by the ꗏeαshore ** !
--# _ _          hιgh tιdes of grαtιtude
-~~                                      ~~
--# _ _       <:002:1568197332883742810> : ${buyerTag}
--# _ _  <:glow_dots:1560696020852019310> ${itemInfo}  oƒ  ${itemName}
--# _ _  <:glow_dots:1560696020852019310> vιa : ${mopInfo}
--# _ _  <:glow_dots:1560696020852019310> ꝓ ${amount} sᧉnt vιa mop
--# _ _   ιtem cαtered by : <@${staffUser.id}>
-~~                                      ~~
--# _ _   ${statusLine}
-_ _`;
+         <:009:1568197445698064395> <:010:1568197472487088169>    ** by  the  ꗏeαshore **    *!*
+-# _ _                    hιgh tιdes of grαtιtude
+~~                                                                              ~~
+-# _ _               <:002:1568197332883742810> : ${buyerTag}
+
+-# _ _    <:glow_dots:1560696020852019310> # **${qty}**     oƒ     **${itemName}**
+-# _ _    <:glow_dots:1560696020852019310> vιa : **${itemInfo}**
+-# _ _    <:glow_dots:1560696020852019310> ꝓ \` ${amnt} \`   sᧉnt vιa **${mop}**
+-# _ _         ιtem cαtered by : <@${staffUser.id}>
+~~                                                                              ~~
+${statusBlockquote}`;
 }
 
 function buildQueueComponents(isDisabled = false) {
@@ -274,10 +275,11 @@ async function handleQueueCommand(interaction) {
     }
 
     const buyer = interaction.options.getUser('buyer');
+    const qty = interaction.options.getString('qty');
     const itemName = interaction.options.getString('item_name');
     const itemInfo = interaction.options.getString('item_info');
-    const mop = interaction.options.getString('mop');
     const amnt = interaction.options.getString('amnt');
+    const mop = interaction.options.getString('mop');
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -286,8 +288,8 @@ async function handleQueueCommand(interaction) {
         return interaction.editReply({ content: 'Error: Target queue channel could not be found.' });
     }
 
-    const initialStatus = 'ιtem sent to lιneup';
-    const description = getQueueDescription(buyer.toString(), itemInfo, itemName, mop, amnt, interaction.user, initialStatus);
+    const initialStatus = '> -# _ _     **ιtem sent to lιneup**';
+    const description = getQueueDescription(buyer.toString(), qty, itemName, itemInfo, amnt, mop, interaction.user, initialStatus);
     
     const embed = new EmbedBuilder().setColor(PASTEL_BLUE).setDescription(description);
     const components = buildQueueComponents(false);
@@ -305,19 +307,20 @@ async function handleQueueMenu(interaction) {
     const embed = interaction.message.embeds[0];
     if (!embed || !embed.description) return;
 
-    let newStatusLine = '';
+    let newStatusBlock = '';
     let isCompleted = false;
 
     if (selectedValue === 'noted') {
-        newStatusLine = 'your order ιs noted by ownιe';
+        newStatusBlock = '> -# _ _     **your order ιs noted by ownιe**';
     } else if (selectedValue === 'processing') {
-        newStatusLine = 'your order ιs beιng processed';
+        newStatusBlock = '> -# _ _     **your order ιs beιng processed**  <:001_dns:1567870463366004756>';
     } else if (selectedValue === 'completed') {
-        newStatusLine = 'your order ιs now delιvered';
+        newStatusBlock = '> -# _ _     **your order ιs now delιvered**';
         isCompleted = true;
     }
 
-    const updatedDesc = embed.description.replace(/-\# _ _\s+[^-\n]+$/, `-# _ _   ${newStatusLine}`);
+    // Replace the bottom blockquote line precisely
+    const updatedDesc = embed.description.replace(/>\s*-\#\s*_ _[\s\S]*$/, newStatusBlock);
     const updatedEmbed = EmbedBuilder.from(embed).setDescription(updatedDesc);
     const newComponents = buildQueueComponents(isCompleted);
 
