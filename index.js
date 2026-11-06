@@ -1,6 +1,3 @@
-Here is your completely updated `index.js` file, incorporating all your exact specifications for the new queue message layouts, status tracking options, grey buttons, the spiral emoji dummy button, the updated `/mop` command with four payment methods (GCash, PayMaya, PayPal, GoTyme), banner dividers, specific account numbers and initials, image embeds, copy-number ephemeral replies, and OCR receipt processing that notifies staff (`<@&1533372358755221566>`).
-
-```javascript
 const { 
     Client, GatewayIntentBits, SlashCommandBuilder, REST, Routes, 
     ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, 
