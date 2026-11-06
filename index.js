@@ -28,7 +28,7 @@ app.listen(PORT, '0.0.0.0', () => {
 
 const STAFF_ROLE_ID = '1533372358755221566';
 const RESTRICTED_TICKET_ROLE_ID = '1557329338943283240'; // No-Vouch Role ID
-const TARGET_QUEUE_CHANNEL_ID = '1542629404973211698';
+const TARGET_QUEUE_CHANNEL_ID = '1539239066049060974';
 const TRANSCRIPT_CHANNEL_ID = '1507278726998524046';
 const VOUCH_URL = 'https://discord.com/channels/1507214174084927498/1507271897962778706';
 const BANNER_URL = 'https://cdn.discordapp.com/attachments/1553697060056866906/1554405328462938162/Coral_Reef_Sea_GIF_-_Coral_Reef_Sea_Ocean_-_Discover__Share_GIFs.gif?ex=6abf6745&is=6abe15c5&hm=7248fb3fe9a07a4857b393db5d6a767808fb7d12d910cd4e1bcd95281abb5a18';
@@ -70,12 +70,12 @@ const commands = [
     new SlashCommandBuilder()
         .setName('queue-list')
         .setDescription('Create a new queue order tracker')
-        .addUserOption(opt => opt.setName('buyer').setDescription('User who bought the item').setRequired(true))
+        .addUserOption(opt => opt.setName('buyer').setDescription('Buyer').setRequired(true))
         .addStringOption(opt => opt.setName('item_name').setDescription('Item name').setRequired(true))
         .addStringOption(opt => opt.setName('quantity').setDescription('Quantity').setRequired(true))
-        .addStringOption(opt => opt.setName('order_info').setDescription('Order info (game name, via plus, etc.)').setRequired(true))
-        .addStringOption(opt => opt.setName('mode_of_payment').setDescription('Mode of payment info').setRequired(true))
-        .addStringOption(opt => opt.setName('amount').setDescription('Amount sent').setRequired(true)),
+        .addStringOption(opt => opt.setName('order_info').setDescription('Order info').setRequired(true))
+        .addStringOption(opt => opt.setName('mode_of_payment').setDescription('Mode of payment').setRequired(true))
+        .addStringOption(opt => opt.setName('amount').setDescription('Amount').setRequired(true)),
 
     new SlashCommandBuilder()
         .setName('ticket-setup')
@@ -84,7 +84,7 @@ const commands = [
     new SlashCommandBuilder()
         .setName('mop')
         .setDescription('Generate mode of payment details for a buyer')
-        .addNumberOption(opt => opt.setName('amount').setDescription('Total amount to be paid').setRequired(true))
+        .addNumberOption(opt => opt.setName('amount').setDescription('Amount the buyer needs to pay').setRequired(true))
 ].map(cmd => cmd.toJSON());
 
 client.once('ready', async () => {
@@ -837,7 +837,6 @@ async function handleMopModals(interaction) {
             titleText = '**ƒor gotyme pɑyment :**';
             accNum = '0163 811 51370';
             initials = 'J.S.';
-            imageUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/https://cdn.discordapp.com/attachments/1560207522521022494/1568234203034947624/Screenshot_2026-11-06_at_7.52.25_PM.png';
             imageUrl = 'https://cdn.discordapp.com/attachments/1560207522521022494/1568234203034947624/Screenshot_2026-11-06_at_7.52.25_PM.png';
         }
 
