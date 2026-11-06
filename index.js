@@ -72,10 +72,9 @@ const commands = [
         .setDescription('Create a new queue order tracker')
         .addUserOption(opt => opt.setName('buyer').setDescription('Buyer').setRequired(true))
         .addStringOption(opt => opt.setName('item_name').setDescription('Item name').setRequired(true))
-        .addStringOption(opt => opt.setName('quantity').setDescription('Quantity').setRequired(true))
-        .addStringOption(opt => opt.setName('order_info').setDescription('Order info').setRequired(true))
-        .addStringOption(opt => opt.setName('mode_of_payment').setDescription('Mode of payment').setRequired(true))
-        .addStringOption(opt => opt.setName('amount').setDescription('Amount').setRequired(true)),
+        .addStringOption(opt => opt.setName('item_info').setDescription('Item info').setRequired(true))
+        .addStringOption(opt => opt.setName('mop').setDescription('Mode of payment').setRequired(true))
+        .addStringOption(opt => opt.setName('amnt').setDescription('Amount').setRequired(true)),
 
     new SlashCommandBuilder()
         .setName('ticket-setup')
@@ -240,13 +239,13 @@ client.on('messageCreate', async (message) => {
 // ==========================================
 // SECTION 1: QUEUE SYSTEM MODULE (/queue-list)
 // ==========================================
-function getQueueDescription(buyerTag, qty, itemName, mopInfo, amount, staffUser, statusLine) {
+function getQueueDescription(buyerTag, itemInfo, itemName, mopInfo, amount, staffUser, statusLine) {
     return `_ _
 <:009:1568197445698064395> <:010:1568197472487088169>  ** by the ꗏeαshore ** !
 -# _ _          hιgh tιdes of grαtιtude
 ~~                                      ~~
 -# _ _       <:002:1568197332883742810> : ${buyerTag}
--# _ _  <:glow_dots:1560696020852019310> # ${qty}  oƒ  ${itemName}
+-# _ _  <:glow_dots:1560696020852019310> ${itemInfo}  oƒ  ${itemName}
 -# _ _  <:glow_dots:1560696020852019310> vιa : ${mopInfo}
 -# _ _  <:glow_dots:1560696020852019310> ꝓ ${amount} sᧉnt vιa mop
 -# _ _   ιtem cαtered by : <@${staffUser.id}>
@@ -266,17 +265,7 @@ function buildQueueComponents(isDisabled = false) {
             new StringSelectMenuOptionBuilder().setValue('completed').setLabel('completed')
         );
 
-    const row1 = new ActionRowBuilder().addComponents(selectMenu);
-    
-    const row2 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId('queue_spiral_dummy')
-            .setEmoji('<a:spiral:1555857356082909315>')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true)
-    );
-
-    return [row1, row2];
+    return [new ActionRowBuilder().addComponents(selectMenu)];
 }
 
 async function handleQueueCommand(interaction) {
@@ -286,10 +275,9 @@ async function handleQueueCommand(interaction) {
 
     const buyer = interaction.options.getUser('buyer');
     const itemName = interaction.options.getString('item_name');
-    const qty = interaction.options.getString('quantity');
-    const orderInfo = interaction.options.getString('order_info');
-    const mop = interaction.options.getString('mode_of_payment');
-    const amountPaid = interaction.options.getString('amount');
+    const itemInfo = interaction.options.getString('item_info');
+    const mop = interaction.options.getString('mop');
+    const amnt = interaction.options.getString('amnt');
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -299,7 +287,7 @@ async function handleQueueCommand(interaction) {
     }
 
     const initialStatus = 'ιtem sent to lιneup';
-    const description = getQueueDescription(buyer.toString(), qty, itemName, orderInfo, amountPaid, interaction.user, initialStatus);
+    const description = getQueueDescription(buyer.toString(), itemInfo, itemName, mop, amnt, interaction.user, initialStatus);
     
     const embed = new EmbedBuilder().setColor(PASTEL_BLUE).setDescription(description);
     const components = buildQueueComponents(false);
