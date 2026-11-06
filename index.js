@@ -68,14 +68,14 @@ const client = new Client({
 
 const commands = [
     new SlashCommandBuilder()
-        .setName('queue')
+        .setName('queue-list')
         .setDescription('Create a new queue order tracker')
-        .addChannelOption(opt => opt.setName('ticket_channel').setDescription('Ticket channel where the order was placed').setRequired(true))
+        .addUserOption(opt => opt.setName('buyer').setDescription('User who bought the item').setRequired(true))
         .addStringOption(opt => opt.setName('item_name').setDescription('Item name').setRequired(true))
-        .addStringOption(opt => opt.setName('qty').setDescription('Quantity').setRequired(true))
-        .addUserOption(opt => opt.setName('staff').setDescription('Staff who used the /queue command').setRequired(true))
-        .addStringOption(opt => opt.setName('mop').setDescription('Mode of payment info').setRequired(true))
-        .addStringOption(opt => opt.setName('amount_paid').setDescription('Amount sent').setRequired(true)),
+        .addStringOption(opt => opt.setName('quantity').setDescription('Quantity').setRequired(true))
+        .addStringOption(opt => opt.setName('order_info').setDescription('Order info (game name, via plus, etc.)').setRequired(true))
+        .addStringOption(opt => opt.setName('mode_of_payment').setDescription('Mode of payment info').setRequired(true))
+        .addStringOption(opt => opt.setName('amount').setDescription('Amount sent').setRequired(true)),
 
     new SlashCommandBuilder()
         .setName('ticket-setup')
@@ -110,7 +110,7 @@ client.once('ready', async () => {
 client.on('interactionCreate', async (interaction) => {
     try {
         // --- QUEUE MODULE ---
-        if (interaction.isChatInputCommand() && interaction.commandName === 'queue') {
+        if (interaction.isChatInputCommand() && interaction.commandName === 'queue-list') {
             return handleQueueCommand(interaction);
         }
         if (interaction.isStringSelectMenu() && interaction.customId === 'queue_status_menu') {
@@ -238,7 +238,7 @@ client.on('messageCreate', async (message) => {
 
 
 // ==========================================
-// SECTION 1: QUEUE SYSTEM MODULE (/queue)
+// SECTION 1: QUEUE SYSTEM MODULE (/queue-list)
 // ==========================================
 function getQueueDescription(buyerTag, qty, itemName, mopInfo, amount, staffUser, statusLine) {
     return `_ _
@@ -248,7 +248,7 @@ function getQueueDescription(buyerTag, qty, itemName, mopInfo, amount, staffUser
 -# _ _       <:002:1568197332883742810> : ${buyerTag}
 -# _ _  <:glow_dots:1560696020852019310> # ${qty}  oƒ  ${itemName}
 -# _ _  <:glow_dots:1560696020852019310> vιa : ${mopInfo}
--# _ _  <:glow_dots:1560696020852019310> ꝓ ${amount} sᧉnt vιa ${mop}
+-# _ _  <:glow_dots:1560696020852019310> ꝓ ${amount} sᧉnt vιa mop
 -# _ _   ιtem cαtered by : <@${staffUser.id}>
 ~~                                      ~~
 -# _ _   ${statusLine}
@@ -268,7 +268,6 @@ function buildQueueComponents(isDisabled = false) {
 
     const row1 = new ActionRowBuilder().addComponents(selectMenu);
     
-    // Grey button beside/below with only the spiral emoji (always disabled)
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('queue_spiral_dummy')
@@ -285,12 +284,12 @@ async function handleQueueCommand(interaction) {
         return interaction.reply({ content: 'You do not have permission to use this command.', flags: MessageFlags.Ephemeral });
     }
 
-    const ticketChannel = interaction.options.getChannel('ticket_channel');
+    const buyer = interaction.options.getUser('buyer');
     const itemName = interaction.options.getString('item_name');
-    const qty = interaction.options.getString('qty');
-    const staff = interaction.options.getUser('staff');
-    const mop = interaction.options.getString('mop');
-    const amountPaid = interaction.options.getString('amount_paid');
+    const qty = interaction.options.getString('quantity');
+    const orderInfo = interaction.options.getString('order_info');
+    const mop = interaction.options.getString('mode_of_payment');
+    const amountPaid = interaction.options.getString('amount');
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -300,7 +299,7 @@ async function handleQueueCommand(interaction) {
     }
 
     const initialStatus = 'ιtem sent to lιneup <:001_dns:1567870463366004756>';
-    const description = getQueueDescription(ticketChannel.toString(), qty, itemName, mop, amountPaid, staff, initialStatus);
+    const description = getQueueDescription(buyer.toString(), qty, itemName, orderInfo, amountPaid, interaction.user, initialStatus);
     
     const embed = new EmbedBuilder().setColor(PASTEL_BLUE).setDescription(description);
     const components = buildQueueComponents(false);
@@ -335,35 +334,6 @@ async function handleQueueMenu(interaction) {
     const newComponents = buildQueueComponents(isCompleted);
 
     await interaction.update({ embeds: [updatedEmbed], components: newComponents });
-
-    if (selectedValue === 'processing' || selectedValue === 'completed') {
-        const matchChannel = embed.description.match(/<#(\d+)>/);
-        if (matchChannel) {
-            const ticketChannelId = matchChannel[1];
-            const ticketChan = interaction.guild.channels.cache.get(ticketChannelId);
-            
-            if (ticketChan) {
-                let notifEmbed = new EmbedBuilder().setColor(PASTEL_BLUE).setTimestamp();
-                let contentMsg = '';
-
-                if (selectedValue === 'processing') {
-                    contentMsg = `_ _         **ℓovᧉ  dᧉɑrly,**  ${matchChannel[0]}  !  <a:a009_bluebow1491899840941129808:1555584862511956129>         thᧉ  **tidᧉs**  ɑrᧉ  **ɑlignᧉd**  . . . ɑnd     your order is now being  ***processed.***\nthɑnk you for wɑiting pɑtiently,         pleɑse do not rush peɑrl-keepers`;
-                } else if (selectedValue === 'completed') {
-                    contentMsg = `_ _         **ℓovᧉ  dᧉɑrly,**  ${matchChannel[0]}  !  <a:a009_bluebow1491899840941129808:1555584862511956129>         thᧉ  **tidᧉs**  ɑrᧉ  **ɑlignᧉd**  . . . ɑnd     your order is now  ***sent & delivered.***\nthɑnk you for wɑiting pɑtiently,         pleɑse do vouch the peɑrl-keepers`;
-                }
-
-                const vouchButtonRow = selectedValue === 'completed' ? new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setLabel('vouch here').setStyle(ButtonStyle.Link).setURL(VOUCH_URL)
-                ) : null;
-
-                await ticketChan.send({ 
-                    content: contentMsg, 
-                    embeds: [notifEmbed], 
-                    components: vouchButtonRow ? [vouchButtonRow] : [] 
-                });
-            }
-        }
-    }
 }
 
 
@@ -867,6 +837,7 @@ async function handleMopModals(interaction) {
             titleText = '**ƒor gotyme pɑyment :**';
             accNum = '0163 811 51370';
             initials = 'J.S.';
+            imageUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/https://cdn.discordapp.com/attachments/1560207522521022494/1568234203034947624/Screenshot_2026-11-06_at_7.52.25_PM.png';
             imageUrl = 'https://cdn.discordapp.com/attachments/1560207522521022494/1568234203034947624/Screenshot_2026-11-06_at_7.52.25_PM.png';
         }
 
@@ -914,5 +885,3 @@ async function handleMopButtons(interaction) {
 }
 
 client.login(process.env.DISCORD_TOKEN);
-
-```
