@@ -261,9 +261,9 @@ function buildQueueComponents(isDisabled = false) {
         .setPlaceholder('select queue status...')
         .setDisabled(isDisabled)
         .addOptions(
-            new StringSelectMenuOptionBuilder().setValue('noted').setLabel('noted').setDescription('Set status to noted (Layout 1)'),
-            new StringSelectMenuOptionBuilder().setValue('processing').setLabel('processing').setDescription('Set status to processing (Layout 2)'),
-            new StringSelectMenuOptionBuilder().setValue('completed').setLabel('completed').setDescription('Set status to completed (Layout 3 & disable menu)')
+            new StringSelectMenuOptionBuilder().setValue('noted').setLabel('noted'),
+            new StringSelectMenuOptionBuilder().setValue('processing').setLabel('processing'),
+            new StringSelectMenuOptionBuilder().setValue('completed').setLabel('completed')
         );
 
     const row1 = new ActionRowBuilder().addComponents(selectMenu);
@@ -298,7 +298,7 @@ async function handleQueueCommand(interaction) {
         return interaction.editReply({ content: 'Error: Target queue channel could not be found.' });
     }
 
-    const initialStatus = 'ιtem sent to lιneup <:001_dns:1567870463366004756>';
+    const initialStatus = 'ιtem sent to lιneup';
     const description = getQueueDescription(buyer.toString(), qty, itemName, orderInfo, amountPaid, interaction.user, initialStatus);
     
     const embed = new EmbedBuilder().setColor(PASTEL_BLUE).setDescription(description);
@@ -321,15 +321,15 @@ async function handleQueueMenu(interaction) {
     let isCompleted = false;
 
     if (selectedValue === 'noted') {
-        newStatusLine = 'your order ιs noted by ownιe <:001_dns:1567870463366004756>';
+        newStatusLine = 'your order ιs noted by ownιe';
     } else if (selectedValue === 'processing') {
-        newStatusLine = 'your order ιs beιng processed <:001_dns:1567870463366004756>';
+        newStatusLine = 'your order ιs beιng processed';
     } else if (selectedValue === 'completed') {
-        newStatusLine = 'your order ιs now delιvered <:001_dns:1567870463366004756>';
+        newStatusLine = 'your order ιs now delιvered';
         isCompleted = true;
     }
 
-    const updatedDesc = embed.description.replace(/-\# _ _\s+.*(<:001_dns:.*)?$/, `-# _ _   ${newStatusLine}`);
+    const updatedDesc = embed.description.replace(/-\# _ _\s+[^-\n]+$/, `-# _ _   ${newStatusLine}`);
     const updatedEmbed = EmbedBuilder.from(embed).setDescription(updatedDesc);
     const newComponents = buildQueueComponents(isCompleted);
 
