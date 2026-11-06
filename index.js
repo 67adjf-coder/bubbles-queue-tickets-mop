@@ -749,14 +749,15 @@ async function handleMopCommand(interaction) {
     const amount = interaction.options.getNumber('amount');
 
     const desc = `_ _
-       <:002_dns:1567870533285052498>   **sent by ɑbove** :
--# _ _       tips  ɑre  ɑppreciɑted  *!*
-⎯⎯⎯⎯⎯   <:flower:1560691740456001659>  ⎯⎯⎯⎯⎯
--# _ _ totɑl ɑmount to be pɑid:  ` Ꭾ ${amnt} `
+         <:002_dns:1567870533285052498>    **sent by ɑbove** :
+-# _ _        tips   ɑre   ɑppreciɑted   *!*
+⎯⎯⎯⎯⎯    <:flower:1560691740456001659>    ⎯⎯⎯⎯⎯
+-# _ _ totɑl ɑmount to be pɑid:   \` Ꭾ(${amount.toFixed(2)}) \`
 -# _ _ pleɑse choose ɑ pɑyment method
 _ _
--# _ _ extrɑ  ɑmount  sent  ɑre  tips
--# _ _ refunds    ɑre   not   ɑllowed  !`;
+-# _ _ extrɑ   ɑmount   sent   ɑre   tips
+-# _ _ refunds      ɑre      not      ɑllowed   !
+_ _`;
 
     const embed = new EmbedBuilder().setColor(PASTEL_BLUE).setDescription(desc);
 
@@ -771,7 +772,11 @@ _ _
         );
 
     const row = new ActionRowBuilder().addComponents(selectMenu);
-    await interaction.reply({ embeds: [embed], components: [row] });
+    
+    // Acknowledge ephemeral response first so Discord command doesn't fail
+    await interaction.reply({ content: 'Mode of payment panel generated!', flags: MessageFlags.Ephemeral });
+    // Send public embed directly to the channel
+    await interaction.channel.send({ embeds: [embed], components: [row] });
 }
 
 async function handleMopSelectMenu(interaction) {
@@ -877,8 +882,8 @@ _ _`;
             ];
 
             const amountPatterns = [
-                /(?:Total\s*Amount\s*Sent|Amount|Total|Paid)\s*[:#-]?\s*(?:PHP|P|₱)?\s*([\d,]+\.\d{2})/i,
-                /(?:PHP|P|₱)\s*([\d,]+\.\d{2})/i,
+                /(?:Total\s*Amount\s*Sent|Amount|Total|Paid)\s*[:#-]?\s*(?:PHP|P|₱|Ꭾ)?\s*([\d,]+\.\d{2})/i,
+                /(?:PHP|P|₱|Ꭾ)\s*([\d,]+\.\d{2})/i,
                 /\b([\d,]+\.\d{2})\b/
             ];
 
