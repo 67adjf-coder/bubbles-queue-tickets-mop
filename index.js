@@ -147,7 +147,7 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.isButton() && ['mop_copy_num', 'mop_send_receipt'].includes(interaction.customId)) {
             return handleMopButtons(interaction);
         }
-        if (interaction.isModalSubmit() && interaction.customId.startsWith('mop_tip_modal_')) {
+        if (interaction.isModalSubmit() && (interaction.customId.startsWith('mop_tip_modal_') || interaction.customId === 'mop_receipt_modal')) {
             return handleMopModals(interaction);
         }
     } catch (err) {
@@ -319,7 +319,6 @@ async function handleQueueMenu(interaction) {
         isCompleted = true;
     }
 
-    // Replace the bottom blockquote line precisely
     const updatedDesc = embed.description.replace(/>\s*-\#\s*_ _[\s\S]*$/, newStatusBlock);
     const updatedEmbed = EmbedBuilder.from(embed).setDescription(updatedDesc);
     const newComponents = buildQueueComponents(isCompleted);
@@ -855,6 +854,78 @@ _ _`;
         
         await interaction.reply({ embeds: [embed], components: [actionButtons] });
     }
+
+    if (interaction.customId === 'mop_receipt_modal') {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const receiptUrl = interaction.fields.getTextInputValue('receipt_link');
+
+        try {
+            const response = await axios.get(receiptUrl, { responseType: 'arraybuffer' });
+            const inputBuffer = Buffer.from(response.data);
+
+            const image = await Jimp.read(inputBuffer);
+            image.greyscale().contrast(0.2).resize(1000, Jimp.AUTO);
+            const processedBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
+
+            const { data: { text } } = await Tesseract.recognize(processedBuffer, 'eng');
+
+            const refPatterns = [
+                /(?:Ref\s*No\.|Reference\s*No\.|Ref\.|Transaction\s*No\.|Txn\s*ID|Control\s*No\.)\s*[:#-]?\s*([0-9\s]{9,20})/i,
+                /\b00\d{10,12}\b/,
+                /\b\d{13}\b/,
+                /\b\d{4}\s?\d{3}\s?\d{6}\b/,
+                /\b\d{4}\s?\d{4}\s?\d{4}\b/
+            ];
+
+            const amountPatterns = [
+                /(?:Total\s*Amount\s*Sent|Amount|Total|Paid)\s*[:#-]?\s*(?:PHP|P|₱)?\s*([\d,]+\.\d{2})/i,
+                /(?:PHP|P|₱)\s*([\d,]+\.\d{2})/i,
+                /\b([\d,]+\.\d{2})\b/
+            ];
+
+            let extractedRef = null;
+            for (const pattern of refPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    extractedRef = (match[1] || match[0]).replace(/\s+/g, '').trim();
+                    break;
+                }
+            }
+
+            let extractedAmount = null;
+            for (const pattern of amountPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    extractedAmount = (match[1] || match[0]).trim();
+                    break;
+                }
+            }
+
+            const nowUTC = new Date().toUTCString();
+
+            const receiptEmbed = new EmbedBuilder()
+                .setColor(PASTEL_BLUE)
+                .setTitle('🧾 Receipt Details Verified')
+                .addFields(
+                    { name: 'Reference Number', value: extractedRef ? `\`${extractedRef}\`` : '⚠️ *Not detected clearly*', inline: true },
+                    { name: 'Amount Paid', value: extractedAmount ? `₱${extractedAmount}` : '⚠️ *Not detected clearly*', inline: true },
+                    { name: 'Time & Date', value: nowUTC, inline: true },
+                    { name: 'Payer', value: `${interaction.user}`, inline: false }
+                )
+                .setImage(receiptUrl)
+                .setFooter({ text: 'Notified staff successfully!' })
+                .setTimestamp();
+
+            await interaction.editReply({ 
+                content: `✅ Receipt successfully verified and sent to staff <@&${STAFF_ROLE_ID}>!`, 
+                embeds: [receiptEmbed] 
+            });
+
+        } catch (error) {
+            console.error('OCR Modal Error:', error);
+            await interaction.editReply('❌ Failed to read or fetch the image link provided. Please make sure it is a direct image URL.');
+        }
+    }
 }
 
 async function handleMopButtons(interaction) {
@@ -867,10 +938,19 @@ async function handleMopButtons(interaction) {
     }
 
     if (interaction.customId === 'mop_send_receipt') {
-        await interaction.reply({ 
-            content: `Please upload your receipt screenshot directly in this channel and mention <@${client.user.id}> so I can automatically read and verify your transaction details for the staff (<@&${STAFF_ROLE_ID}>)!`, 
-            flags: MessageFlags.Ephemeral 
-        });
+        const modal = new ModalBuilder()
+            .setCustomId('mop_receipt_modal')
+            .setTitle('Submit Receipt Proof');
+
+        const imageInput = new TextInputBuilder()
+            .setCustomId('receipt_link')
+            .setLabel('Paste direct image link of your receipt:')
+            .setPlaceholder('https://cdn.discordapp.com/attachments/...')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        modal.addComponents(new ActionRowBuilder().addComponents(imageInput));
+        return await interaction.showModal(modal);
     }
 }
 
