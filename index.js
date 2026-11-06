@@ -186,8 +186,8 @@ client.on('messageCreate', async (message) => {
             ];
 
             const amountPatterns = [
-                /(?:Total\s*Amount\s*Sent|Amount|Total|Paid)\s*[:#-]?\s*(?:PHP|P|₱)?\s*([\d,]+\.\d{2})/i,
-                /(?:PHP|P|₱)\s*([\d,]+\.\d{2})/i,
+                /(?:Total\s*Amount\s*Sent|Amount|Total|Paid)\s*[:#-]?\s*(?:PHP|P|₱|Ꭾ)?\s*([\d,]+\.\d{2})/i,
+                /(?:PHP|P|₱|Ꭾ)\s*([\d,]+\.\d{2})/i,
                 /\b([\d,]+\.\d{2})\b/
             ];
 
@@ -240,19 +240,18 @@ client.on('messageCreate', async (message) => {
 // ==========================================
 // SECTION 1: QUEUE SYSTEM MODULE (/queue-list)
 // ==========================================
-function getQueueDescription(buyerTag, qty, itemName, itemInfo, amnt, mop, staffUser, statusBlockquote) {
+function getQueueDescription(buyerTag, qty, itemName, itemInfo, amnt, mop, staffUser, statusLine) {
     return `_ _
          <:009:1568197445698064395> <:010:1568197472487088169>    ** by  the  ꗏeαshore **    *!*
 -# _ _                    hιgh tιdes of grαtιtude
-~~                                                                              ~~
+~~                                      ~~
 -# _ _               <:002:1568197332883742810> : ${buyerTag}
-
 -# _ _    <:glow_dots:1560696020852019310> # **${qty}**     oƒ     **${itemName}**
 -# _ _    <:glow_dots:1560696020852019310> vιa : **${itemInfo}**
 -# _ _    <:glow_dots:1560696020852019310> ꝓ \` ${amnt} \`   sᧉnt vιa **${mop}**
 -# _ _         ιtem cαtered by : <@${staffUser.id}>
-~~                                                                              ~~
-${statusBlockquote}`;
+~~                                      ~~
+${statusLine}`;
 }
 
 function buildQueueComponents(isDisabled = false) {
@@ -288,7 +287,7 @@ async function handleQueueCommand(interaction) {
         return interaction.editReply({ content: 'Error: Target queue channel could not be found.' });
     }
 
-    const initialStatus = '> -# _ _     **ιtem sent to lιneup**';
+    const initialStatus = '-# _ _   ιtem sent to lιneup <:001_dns:1567870463366004756>';
     const description = getQueueDescription(buyer.toString(), qty, itemName, itemInfo, amnt, mop, interaction.user, initialStatus);
     
     const embed = new EmbedBuilder().setColor(PASTEL_BLUE).setDescription(description);
@@ -307,19 +306,19 @@ async function handleQueueMenu(interaction) {
     const embed = interaction.message.embeds[0];
     if (!embed || !embed.description) return;
 
-    let newStatusBlock = '';
+    let newStatusLine = '';
     let isCompleted = false;
 
     if (selectedValue === 'noted') {
-        newStatusBlock = '> -# _ _     **your order ιs noted by ownιe**';
+        newStatusLine = '-# _ _   your order ιs noted by ownιe <:001_dns:1567870463366004756>';
     } else if (selectedValue === 'processing') {
-        newStatusBlock = '> -# _ _     **your order ιs beιng processed**  <:001_dns:1567870463366004756>';
+        newStatusLine = '-# _ _   your order ιs beιng processed <:001_dns:1567870463366004756>';
     } else if (selectedValue === 'completed') {
-        newStatusBlock = '> -# _ _     **your order ιs now delιvered**';
+        newStatusLine = '-# _ _   your order ιs now delιvered <:001_dns:1567870463366004756>';
         isCompleted = true;
     }
 
-    const updatedDesc = embed.description.replace(/>\s*-\#\s*_ _[\s\S]*$/, newStatusBlock);
+    const updatedDesc = embed.description.replace(/-\#\s*_ _\s+ιtem sent to lιneup[\s\S]*$|-\#\s*_ _\s+your order ιs[\s\S]*$/, newStatusLine);
     const updatedEmbed = EmbedBuilder.from(embed).setDescription(updatedDesc);
     const newComponents = buildQueueComponents(isCompleted);
 
@@ -773,9 +772,7 @@ _ _`;
 
     const row = new ActionRowBuilder().addComponents(selectMenu);
     
-    // Acknowledge ephemeral response first so Discord command doesn't fail
     await interaction.reply({ content: 'Mode of payment panel generated!', flags: MessageFlags.Ephemeral });
-    // Send public embed directly to the channel
     await interaction.channel.send({ embeds: [embed], components: [row] });
 }
 
