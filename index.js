@@ -749,14 +749,14 @@ async function handleMopCommand(interaction) {
     const amount = interaction.options.getNumber('amount');
 
     const desc = `_ _
-         <:002_dns:1567870533285052498>    **sent by ɑbove** :
--# _ _        tips   ɑre   ɑppreciɑted   *!*
-~~                     ~~    <:flower:1560691740456001659>    ~~                     ~~
--# _ _ totɑl ɑmount to be pɑid:   \` ₱ ${amount.toFixed(2)} \`
+       <:002_dns:1567870533285052498>   **sent by ɑbove** :
+-# _ _       tips  ɑre  ɑppreciɑted  *!*
+⎯⎯⎯⎯⎯   <:flower:1560691740456001659>  ⎯⎯⎯⎯⎯
+-# _ _ totɑl ɑmount to be pɑid:  ` ₱ (amnt) `
 -# _ _ pleɑse choose ɑ pɑyment method
 _ _
--# _ _ extrɑ   ɑmount   sent   ɑre   tips
--# _ _ refunds      ɑre      not      ɑllowed   !
+-# _ _ extrɑ  ɑmount  sent  ɑre  tips
+-# _ _ refunds    ɑre   not   ɑllowed  !
 _ _`;
 
     const embed = new EmbedBuilder().setColor(PASTEL_BLUE).setDescription(desc);
